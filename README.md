@@ -1,4 +1,5 @@
-
+# Alpha Release of API2 
+This is a development release of api2 it is not inteneded for production or any real world projects at this stage it is added here purly so it can be tested. However, keep checking back as we are about 8 months from realsing the MVP to the open market. 
 
 ---
 ## Downloading a Release
