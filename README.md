@@ -52,14 +52,6 @@ Ensure that your database service is running and accessible using the credential
 
 ## Initialising the Application
 
-After setting the environment variables and running migrations, initialise the admin role and user:
-
-```bash
-./bin/dynamic eval "Dynamic.GlobalSetup.run()"
-```
-
-Make sure there's no space between `eval` and the opening quotation mark in the command above.
-
 ## Starting the Application
 
 Navigate to the root directory of your unzipped release, then start the application:
@@ -70,5 +62,12 @@ cd /path/to/destination/api2-release-v1.0.0_<distribution>
 ```
 
 Replace `/path/to/destination` with the actual path where you extracted the release files.
+
+
+After setting the environment variables and running migrations, initialise the admin role and user in the running container:
+
+```bash
+./bin/dynamic rpc "Dynamic.GlobalSetup.run()"
+```
 
 ---
