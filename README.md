@@ -26,18 +26,44 @@ Replace `<distribution>` with the specific build for your system (e.g., `mac_int
 
 Before running migrations or starting the application, set the required environment variables in the context where the binary will run. This might be your terminal session or a configuration file for your deployment environment.
 
+## Required variables
 ```bash
+export COMPOSE_PROJECT_NAME=canopus
 export POSTGRES_USER=postgres
-export POSTGRES_PASSWORD=yourpassword
+export POSTGRES_PASSWORD=postgres
 export POSTGRES_HOST=localhost
 export POSTGRES_PORT=5432
 export POSTGRES_DATABASE=canopus
+export POSTGRES_DB=canopus
 export ADMIN_NAME=admin
 export ADMIN_EMAIL=admin@api2.dev
-export ADMIN_PASSWORD=strongpassword
-export OTP_APP=dynamic
+export ADMIN_PASSWORD=admin123456
+export DBDOCS_TOKEN=somedbdocstoken
+export OTP_APP_ENV_VAR_NAME=dynamic
 export LOG_RETENTION_DAYS=90
-export DATA_RETENTION_DAYS=3000
+export DATA_RETENTION_ID_DAYS=3000
+export GCP_CREDENTIALS=./secrets/application_default_credentials.json
+export GOOGLE_CLIENT_EMAIL=api2-client@api2-mvp.iam.gserviceaccount.com
+export ADMIN_AVATAR_PATH="./priv/static/Icon 64.jpeg"
+export GOOGLE_PROJECT_ID=api2-mvp
+export GOOGLE_BUCKET_NAME=api2-mvp
+export GOOGLE_BUCKET_URL=https://storage.googleapis.com/api2-mvp
+export GOOGLE_BUCKET_PATH=api2-mvp
+export GRAFNA_URL=http://grafana:3000
+export GRAFANA_API_KEY=eyJrIjoiZm1t
+export GRAFANA_ORG_ID=1
+export GRAFANA_DASHBOARD_ID=1
+export GRAFANA_DASHBOARD_UID=1
+export GRAFANA_HOST=http://localhost:3000
+export GRAFANA_PORT=3000
+export GRAFANA_USER=admin
+export GRAFANA_PASSWORD=admin
+export GCP_PROJECT_ID=api2-mvp
+export GCP_BUCKET=api2-mvp
+export GCP_BUCKET_URL=https://storage.googleapis.com/api2-mvp
+export GCP_BUCKET_PATH=api2-mvp
+export GCP_SCOPE=https://www.googleapis.com/auth/devstorage.full_control
+export GCP_STORAGE_DIR=/uploads
 ```
 
 Replace placeholder values like `yourpassword` and `strongpassword` with secure values appropriate for your setup.
