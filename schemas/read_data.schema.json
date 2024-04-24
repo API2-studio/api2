@@ -1,0 +1,35 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"id": {
+			"description": "The id of the object on which you woud like to perform the action",
+			"type": "string"
+		},
+		"encoded": {
+			"type": "string"
+		},
+		"script": {
+			"type": "string"
+		},
+		"schema": {
+			"type": "array",
+			"additionalItems": true,
+			"items": [
+				{
+					"type": "object",
+					"oneOf": [
+						{
+							"$ref": "lib/schemas/keys.schema.json"
+						}
+					]
+				}
+			]
+		}
+	},
+	"required": [
+		"id"
+	]
+}

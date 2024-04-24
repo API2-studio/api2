@@ -1,0 +1,8 @@
+{
+    "$id": "lib/schemas/types/bigserial.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "bigserial",
+    "title": "Bigserial",
+    "type": "string",
+    "description": "Bigserial is a 64-bit integer that is guaranteed to be unique and monotonically increasing. It is used as a primary key in most tables. It is a synonym for BIGSERIAL."
+}

@@ -1,0 +1,190 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"name": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 256
+		},
+		"options": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"foreign_key": {
+					"type": "boolean"
+				},
+				"references_table": {
+					"type": "string",
+					"minLength": 2,
+					"maxLength": 64
+				},
+				"references_column": {
+					"type": "string",
+					"minLength": 2,
+					"maxLength": 64
+				},
+				"required": {
+					"type": "boolean"
+				},
+				"unique": {
+					"type": "boolean"
+				},
+				"default": {
+					"type": "string",
+					"maxLength": 256
+				},
+				"index": {
+					"type": "boolean"
+				},
+				"action": {
+					"description": "The action you wish to perform",
+					"type": "string",
+					"enum": [
+						"create",
+						"update",
+						"delete"
+					]
+				},
+				"oid": {
+					"type": "string",
+					"minLength": 2,
+					"maxLength": 64
+				},
+				"relation_type": {
+					"type": "string",
+					"minLength": 2,
+					"maxLength": 256,
+						"enum": [
+							"one-to-one",
+							"one-to-many",
+							"many-to-one",
+							"many-to-many"
+						]
+				},
+				"type": {
+					"type": "string",
+					"minLength": 2,
+					"maxLength": 64,
+					"oneOf": [
+						{	
+							"$ref": "lib/schemas/types/bigint.schema.json"
+						},
+						{	
+							"$ref": "lib/schemas/types/bigserial.schema.json"
+						},
+						{	
+							"$ref": "lib/schemas/types/double_precision.schema.json"
+						},
+						{	
+							"$ref": "lib/schemas/types/integer.schema.json"
+						},
+						{	
+							"$ref": "lib/schemas/types/numeric.schema.json"
+						},
+						{	
+							"$ref": "lib/schemas/types/real.schema.json"
+						},
+						{	
+							"$ref": "lib/schemas/types/serial.schema.json"
+						},
+						{	
+							"$ref": "lib/schemas/types/smallint.schema.json"
+						},
+						{
+							"$ref": "lib/schemas/types/varchar.schema.json"
+						},
+						{
+							"$ref": "lib/schemas/types/json.schema.json"
+						},
+						{
+							"$ref": "lib/schemas/types/jsonb.schema.json"
+						},
+						{
+							"$ref": "lib/schemas/types/boolean.schema.json"
+						},
+						{
+							"$ref": "lib/schemas/types/uuid.schema.json"
+						},
+						{
+							"$ref": "lib/schemas/types/timestamp.schema.json"
+						},
+						{
+							"$ref": "lib/schemas/types/text.schema.json"
+						}
+					]
+				},
+				"expression": {
+					"type": "string",
+					"pattern": "^([a-zA-Z0-9_()]*::[a-zA-Z0-9_()]*)$",
+					"minLength": 2,
+					"maxLength": 64
+				}
+			},
+			"dependencies": {
+				"foreign_key": ["references_table", "references_column", "relation_type"],
+				"references_table": ["foreign_key"],
+				"references_column": ["foreign_key"],
+				"relation_type": ["foreign_key"]
+			},
+			"required": [
+				"action"
+			]
+		},
+		"type": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 64,
+			"oneOf": [
+				{	
+					"$ref": "lib/schemas/types/bigint.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/bigserial.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/double_precision.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/integer.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/numeric.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/real.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/serial.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/smallint.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/varchar.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/json.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/jsonb.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/boolean.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/uuid.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/timestamp.schema.json"
+				}
+			]
+		}
+	},
+	"required": [
+		"name",
+		"options"
+	]
+}

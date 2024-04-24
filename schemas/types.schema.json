@@ -1,0 +1,127 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"name": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 256
+		},
+		"options": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"foreign_key": {
+					"type": "boolean"
+				},
+				"references_table": {
+					"type": "string",
+					"minLength": 2,
+					"maxLength": 256
+				},
+				"references_column": {
+					"type": "string",
+					"minLength": 2,
+					"maxLength": 256
+				},
+				"required": {
+					"type": "boolean"
+				},
+				"unique": {
+					"type": "boolean"
+				},
+				"action": {
+					"description": "The action you wish to perform",
+					"type": "string",
+					"enum": [
+						"create",
+						"update",
+						"delete"
+					]
+				},
+				"current_name": {
+					"type": "string",
+					"minLength": 2,
+					"maxLength": 256
+				}
+			},
+			"required": [
+				"action"
+			]
+		},
+		"type": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 256,
+			"oneOf": [
+				{	
+					"$ref": "lib/schemas/types/bigint.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/bigserial.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/double_precision.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/integer.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/numeric.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/real.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/serial.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/smallint.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/varchar.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/json.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/jsonb.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/boolean.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/uuid.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/timestamp.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/timestamptz.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/date.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/time.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/timetz.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/text.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/character.schema.json"
+				}
+			]
+		}
+	},
+	"required": [
+		"name",
+		"type",
+		"options"
+	]
+}

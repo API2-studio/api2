@@ -1,0 +1,11 @@
+{
+    "$id": "lib/schemas/types/uuid.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "uuid",
+    "description": "A UUID is a 128-bit number used to identify information in computer systems. The term is informally used to refer to any universally unique identifier (UUID).",
+    "examples": [
+        "uuid"
+    ],
+    "title": "UUID",
+    "type": "string"
+}

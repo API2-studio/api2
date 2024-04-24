@@ -1,0 +1,10 @@
+{
+    "$id": "lib/schemas/types/real.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "real",
+    "description": "A real number",
+    "examples": [
+        "real"
+    ],
+    "title": "Real"
+}

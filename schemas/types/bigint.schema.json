@@ -1,0 +1,7 @@
+{
+    "$id": "lib/schemas/types/bigint.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "bigint",
+    "title": "bigint",
+    "description": "The bigint type represents a whole number with no fractional part. It has a minimum value of -2^53 + 1 and a maximum value of 2^53 - 1. BigInt can be used to accurately represent integers larger than 2^53 - 1, or smaller than -2^53 + 1. BigInts are serialized to JSON as strings."
+}

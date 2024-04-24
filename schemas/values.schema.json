@@ -1,0 +1,67 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"key": {
+			"type": "string",
+			"minLength": 1
+		},
+		"value": {
+			"oneOf": [
+				{
+					"type": ["string", "null"]
+				},
+				{
+					"type": ["number", "null"]
+				},
+				{
+					"type": ["boolean", "null"]
+				},
+				{
+					"type": ["array", "null"],
+					"items": {
+						"type": ["string", "null"]
+					}
+				},
+				{
+					"type": ["object", "null"],
+					"additionalProperties": false,
+					"properties": {
+						"key": {
+							"type": ["string", "null"]
+						},
+						"value": {
+							"oneOf": [
+								{
+									"type": ["string", "null"]
+								},
+								{
+									"type": ["number", "null"]
+								},
+								{
+									"type": ["boolean", "null"]
+								},
+								{
+									"type": ["array", "null"],
+									"items": {
+										"type": ["string", "null"]
+									}
+								}
+							]
+						}
+					},
+					"required": [
+						"key",
+						"value"
+					]
+				}
+			]
+        }
+	},
+	"required": [
+		"key",
+		"value"
+	]
+}

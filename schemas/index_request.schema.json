@@ -1,0 +1,44 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"action": {
+			"description": "The action you wish to perform",
+			"type": "string",
+			"enum": [
+				"create",
+				"read",
+				"update",
+				"delete"
+			]
+		},
+		"type": {
+			"type": "string",
+			"oneOf": [{"pattern": "^index$"}]
+		},
+		"body": {
+			"type": "object",
+			"oneOf": [
+				{
+					"$ref": "lib/schemas/create_index.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/delete_index.schema.json"
+				}
+			]
+		},
+		"page": {
+			"type": "string",
+			"pattern": "^[0-9]+$"
+		},
+		"page_size": {
+			"type" : "string",
+			"pattern": "^[0-9]+$"
+		}
+	},
+	"required": [
+		"body"
+	]
+}

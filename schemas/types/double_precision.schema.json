@@ -1,0 +1,10 @@
+{
+    "$id": "lib/schemas/types/double_precision.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "double precision",
+    "description": "The double precision type is a floating point number with a precision of 15 digits. It is a synonym for the double type.",
+    "examples": [
+        "double precision"
+    ],
+    "title": "double precision"
+}

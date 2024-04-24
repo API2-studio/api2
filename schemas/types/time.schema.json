@@ -1,0 +1,9 @@
+{
+    "$id": "lib/schemas/types/time.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "time",
+    "description": "A time of day, represented as a string in the format HH:MM:SS. The time is assumed to be in the timezone of the server.",
+    "example": "time",
+    "title": "Time",
+    "type": "string"
+}

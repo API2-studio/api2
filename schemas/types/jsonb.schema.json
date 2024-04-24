@@ -1,0 +1,12 @@
+{
+    "$id": "lib/schemas/types/jsonb.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "JSONB",
+    "description": "JSONB",
+    "type": "string",
+    "const": "jsonb",
+    "examples": [
+        "jsonb"
+    ],
+    "default": "jsonb"
+}

@@ -1,0 +1,56 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": true,
+	"properties": {
+		"id": {
+			"description": "The id of the object on which you woud like to perform the action",
+			"type": "string"
+		},
+		"ids": {
+			"description": "The ids of the objects on which you woud like to perform the action",
+			"type": "array",
+			"additionalItems": true,
+			"items": [
+				{
+					"type": "string",
+					"minLength": 1
+				}
+			]
+		},
+        "encoded": {
+            "type": "string",
+            "description": "The encoded query for the macro.",
+            "minLength": 1
+        },
+		"schema": {
+			"type": "array",
+			"items": [
+				{
+					"type": "object",
+					"oneOf": [
+						{
+							"$ref": "lib/schemas/values.schema.json"
+						}
+					]
+				}
+			]
+		}
+	},
+	"oneOf": [
+		{
+			"required": [
+				"id"
+			]
+		},
+		{
+			"required": [
+				"ids"
+			]
+		}
+	],
+	"required": [
+		"schema"
+	]
+}

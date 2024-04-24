@@ -1,0 +1,48 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"action": {
+			"description": "The action you wish to perform",
+			"type": "string",
+			"enum": [
+				"create",
+				"update",
+				"delete"
+			]
+		},
+		"type": {
+			"type": "string",
+			"oneOf": [{"pattern": "^data$"}, {"pattern": "^structure$"}]
+		},
+		"body": {
+			"type": "object",
+			"oneOf": [
+				{
+					"$ref": "lib/schemas/create_data.schema.json"
+				}
+			]
+		},
+		"page": {
+			"type": "string",
+			"pattern": "^[0-9]+$"
+		},
+		"page_size": {
+			"type" : "string",
+			"pattern": "^[0-9]+$"
+		},
+		"scheduled_at": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"schedule_in": {
+			"type": "string",
+			"pattern": "^[0-9]+$"
+		}
+	},
+	"required": [
+		"body"
+	]
+}

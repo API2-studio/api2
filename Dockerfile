@@ -24,6 +24,7 @@ WORKDIR /app
 COPY . ./
 COPY .entrypoint.sh ./docker-entrypoint.sh
 COPY ./secrets ./secrets
+COPY ./schemas ./lib/schemas
 # Ensure the script and executables are executable
 RUN chmod +x _build
 RUN chmod +x ./docker-entrypoint.sh

@@ -1,0 +1,42 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"id": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 64
+		},
+        "table": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 64
+		},
+        "encoded": {
+			"type": "string"
+		},
+        "query": {
+            "type": "object"
+        },
+		"schema": {
+			"type": "array",
+			"items": [
+				{
+					"type": "object",
+					"oneOf": [
+						{
+							"$ref": "lib/schemas/view_columns.schema.json"
+						}
+					]
+				}
+			]
+		}
+	},
+	"required": [
+		"schema",
+		"id",
+        "table"
+	]
+}

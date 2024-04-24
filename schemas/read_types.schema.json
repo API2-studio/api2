@@ -1,0 +1,66 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"name": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 256
+		},
+		"type": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 256,
+			"oneOf": [
+				{	
+					"$ref": "lib/schemas/types/bigint.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/bigserial.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/double_precision.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/integer.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/numeric.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/real.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/serial.schema.json"
+				},
+				{	
+					"$ref": "lib/schemas/types/smallint.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/varchar.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/json.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/jsonb.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/boolean.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/uuid.schema.json"
+				},
+				{
+					"$ref": "lib/schemas/types/timestamp.schema.json"
+				}
+			]
+		}
+	},
+	"required": [
+		"name",
+		"type"
+	]
+}

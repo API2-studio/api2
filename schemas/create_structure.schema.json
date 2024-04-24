@@ -1,0 +1,36 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"parent": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 256
+		},
+		"name": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 256
+		},
+		"schema": {
+			"type": "array",
+			"items": [
+				{
+					"type": "object",
+					"oneOf": [
+						{
+							"$ref": "lib/schemas/create_types.schema.json"
+						}
+					]
+				}
+			]
+		}
+	},
+	"required": [
+		"schema",
+		"name",
+		"parent"
+	]
+}

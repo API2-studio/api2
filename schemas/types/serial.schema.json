@@ -1,0 +1,11 @@
+{
+    "$id": "lib/schemas/types/serial.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "serial",
+    "description": "A serial port",
+    "examples": [
+        "serial"
+    ],
+    "title": "Serial",
+    "type": "string"
+}

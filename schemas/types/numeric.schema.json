@@ -1,0 +1,10 @@
+{
+    "$id": "lib/schemas/types/numeric.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "numeric",
+    "description": "A numeric value",
+    "examples": [
+        "numeric"
+    ],
+    "title": "Numeric"
+}

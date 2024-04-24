@@ -1,0 +1,30 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"description": "Comment describing your JSON Schema",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"id": {
+			"description": "The id of the object on which you woud like to perform the action",
+			"type": "string"
+		},
+		"index_name": {
+			"description": "The name of the index on which you woud like to perform the action",
+			"type": "string",
+            "minLength": 1,
+            "maxLength": 255
+
+		},
+        "column": {
+            "description": "The column on which you woud like to perform the action",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        }
+	},
+	"required": [
+		"id",
+        "index_name",
+        "fields"
+	]
+}

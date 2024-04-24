@@ -1,0 +1,46 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "description": "Comment describing your JSON Schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "description": "The id of the object on which you would like to perform the action",
+        "type": "string"
+      },
+      "index_name": {
+        "description": "The name of the index on which you would like to perform the action",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 255
+      },
+      "fields": {
+        "description": "The fields on which you would like to perform the action",
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 100,
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]{0,63}$"
+        }
+      },
+      "options": {
+        "description": "The options on which you would like to perform the action",
+        "type": "string",
+        "pattern": "^(?:ASC|DESC|USING\\s\\w+|NULLS\\s(FIRST|LAST)|WHERE\\s.+|CONCURRENTLY|INCLUDE\\s\\(.+\\))$"
+      },
+      "unique": {
+        "description": "The unique on which you would like to perform the action",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "id",
+      "index_name",
+      "fields",
+      "unique"
+    ]
+  }
+  

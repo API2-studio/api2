@@ -1,0 +1,10 @@
+{
+    "$id": "lib/schemas/types/boolean.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "boolean",
+    "description": "A boolean type",
+    "examples": [
+        "boolean"
+    ],
+    "title": "Boolean"
+}

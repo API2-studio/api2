@@ -1,0 +1,9 @@
+{
+    "$id": "lib/schemas/types/timetz.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "timetz",
+    "title": "timetz",
+    "description": "A time of day with a time zone, represented as a string in the format HH:MM:SS+HH:MM or HH:MM:SS-HH:MM.",
+    "example": "timetz",
+    "type": "string"
+}

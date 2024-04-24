@@ -1,0 +1,8 @@
+{
+    "$id": "lib/schemas/types/date.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Date",
+    "description": "A date, represented as an ISO 8601 combined date and time format string.",
+    "type": "string",
+    "const": "date"
+}

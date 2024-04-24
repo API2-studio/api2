@@ -1,0 +1,11 @@
+{
+    "$id": "lib/schemas/types/smallint.schema.json", 
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "const": "smallint",
+    "description": "The smallint type is a signed two-byte integer. The valid range is -32768 to 32767. The SQL equivalent is SMALLINT.",
+    "examples": [
+        "smallint"
+    ],
+    "title": "smallint",
+    "type": "string"
+}
