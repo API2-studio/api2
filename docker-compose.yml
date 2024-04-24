@@ -1,0 +1,42 @@
+version: '3.8'
+services:
+  api:
+    container_name: Api2
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+    env_file: .env
+    networks:
+      - database
+    ports:
+      - '4000:4000'
+    stdin_open: true
+    tty: true
+
+  
+  database:
+    env_file: .env
+    image: postgres:12.4-alpine
+    networks:
+      - database
+    ports:
+      - '7432:5432'
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    stdin_open: true
+    tty: true
+
+networks:
+  database:
+
+volumes:
+  database_data:
