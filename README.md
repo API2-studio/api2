@@ -73,7 +73,7 @@ Replace placeholder values like `yourpassword` and `strongpassword` with secure 
 Ensure that your database service is running and accessible using the credentials provided in the environment variables. Then, execute the following command to run database migrations:
 
 ```bash
-./bin/dynamic eval "Dynamic.Release.migrate()"
+./bin/dynamic eval "Dynamic.Release.create_and_migrate()"
 ```
 
 ## Initialising the Application
@@ -86,14 +86,3 @@ Navigate to the root directory of your unzipped release, then start the applicat
 cd /path/to/destination/api2-release-v1.0.0_<distribution>
 ./bin/dynamic start
 ```
-
-Replace `/path/to/destination` with the actual path where you extracted the release files.
-
-
-After setting the environment variables and running migrations, initialise the admin role and user in the running container:
-
-```bash
-./bin/dynamic rpc "Dynamic.GlobalSetup.run()"
-```
-
----
