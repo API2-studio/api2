@@ -1,0 +1,13 @@
+@import './base.css';
+/* ./src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#app {
+  font-weight: normal;
+  }
+@media screen and (max-width: 640px) {
+  main {
+  }
+}

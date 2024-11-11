@@ -1,0 +1,1 @@
+.table-width-less-aside{width:calc(100vw - ((100vw / 12) * 2 + 40px))}@media (max-width: 900px){.table-width-less-aside{width:calc(100vw - 40px)}}@media (max-width: 600px){.table-width-less-aside{width:calc(100vw - 40px)}}@media (max-width: 400px){.table-width-less-aside{width:calc(100vw - 40px)}}

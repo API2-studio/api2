@@ -1,0 +1,78 @@
+<!doctype html> <!-- Important: must specify -->
+<html>
+
+<head>
+  <meta charset="utf-8"> <!-- Important: rapi-doc uses utf8 characters -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Important: rapi-doc is responsive --> 
+  <title>API Documentation</title>
+  <!--
+    Important: rapi-doc works only with modern browsers which support ES6 module.
+    If you need to support legacy browsers, please use the pre-build bundle instead.
+  -->
+  <!-- <script src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script> -->
+
+  <!--
+    Important: rapi-doc uses Open Sans font. If your page already uses Open Sans, please comment out this line.
+    Otherwise, please uncomment this line to load the font.
+  -->
+  <!-- <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet"> -->
+
+  <!--
+    Important: rapi-doc uses font-awesome icons. If your page already uses font-awesome, please comment out this line.
+    Otherwise, please uncomment this line to load the font-awesome css.
+  -->
+  <!-- <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
+
+  <!--
+    Important: rapi-doc uses rapi-doc.css. If your page already uses rapi-doc.css, please comment out this line.
+    Otherwise, please uncomment this line to load the rapi-doc.css.
+  -->
+  <link href="https://unpkg.com/rapidoc/dist/rapidoc.min.css" rel="stylesheet">
+  <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+  <link href="./code.css" rel="stylesheet">
+  <script src="./code.js"></script>
+  <!-- styles for info section -->
+
+</head>
+<body>
+  <rapi-doc spec-url="api/openapi" theme="dark" allow-server-selection=true persist-auth=true show-components=false schema-style="table"
+    bg-color="#0f172a" primary-color="#55939E" show-header=false allow-authentication="true" allow-spec-url-load=true
+    fetch-credentials="same-origin" allow-search=true allow-advanced-search=true>
+    <img slot="logo" style="padding:10px; width: 24px" class="contain" src="/icon" />
+        
+    <a slot="nav-logo" href="/"><img src="/logo"  style="width:100px;" class="contain"/></a>
+
+    <div slot="auth">
+      <h3>
+        Provide the API key obtained from the login endpoint and set the api token in the header as "Authorization"
+      </h3>
+      <pre>
+      <code class="language-bash line-numbers" data-prizmjs-copy="Copy">
+        curl -X POST "https://api2.dev/api/v1/authentication/identity/callback" \
+          -H "accept: application/json"\
+          -H "content-type: application/json" \
+          -d '{"user":{"email":"admin@api2.dev","password":"admin123456"}}' 
+      </code>
+    </pre>
+    </div>
+    <div slot="overview">
+      <div style="display:inline-flex;flex-direction:column;align-items:center;">
+        <p class="inline-flex">
+          <a href="mailto:support@api2.dev?subject=Mail from Docs" style="margin-left: 5px;">
+            <img src="https://img.shields.io/badge/Support-gray" alt="Support Email">
+          </a>
+
+          <a href="/terms" target="_blank" style="margin-left: 5px;">
+            <img src="https://img.shields.io/badge/Terms-gray" alt="Terms and Conditions">
+          </a>
+
+          <a href="/privacy" target="_blank" style="margin-left: 5px;">
+            <img src="https://img.shields.io/badge/Privacy-gray" alt="Privacy Policy">
+          </a>
+        </p>
+      </div>
+    </div>
+  </rapi-doc>
+</body>
+
+</html> 

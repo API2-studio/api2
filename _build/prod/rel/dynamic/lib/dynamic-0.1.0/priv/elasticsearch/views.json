@@ -1,0 +1,65 @@
+{
+  "mappings": {
+    "dynamic": "dynamic",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "schema": {
+        "type": "object"
+      },
+      "permissions": {
+        "type": "object"
+      },
+      "created_by": {
+        "type": "keyword"
+      },
+      "updated_by": {
+        "type": "keyword"
+      },
+      "data_type": {
+        "type": "keyword"
+      },
+      "inserted_at": {
+        "type": "date",
+        "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+      },
+      "updated_at": {
+        "type": "date",
+        "format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+      },
+      "acl": {
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "keyword"
+          },
+          "roles": {
+            "type": "keyword"
+          },
+          "users": {
+            "type": "keyword"
+          },
+          "match_all": {
+            "type": "boolean"
+          },
+          "match_none": {
+            "type": "boolean"
+          },
+          "match_any": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  }
+}

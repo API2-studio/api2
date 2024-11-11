@@ -1,0 +1,163 @@
+# defmodule Dynamic.Repo.Migrations.CreateWorkflowRelations do
+#   use Ecto.Migration
+#   alias Dynamic.Utils
+#   alias Dynamic.BaseStructures
+#   alias Dynamic.Repo
+#   alias Dynamic.Docs.JsonSchemaCompiler
+
+#   @system_id Ecto.UUID.dump!("00000000-0000-0000-0000-000000000000") |> Ecto.UUID.cast!()
+
+#   def change do
+#     table_id = Utils.get_table_id_from_name("steps")
+#     references_table_id = Utils.get_table_id_from_name("workflows")
+
+#     steps_relations = [
+#       %{
+#         "relation_type" => "many-to-one",
+#         "references_table" => %{
+#           "column" => "id",
+#           "id" => Ecto.UUID.cast!(references_table_id),
+#           "name" => "workflows"
+#         },
+#         "table" => %{
+#           "column" => "workflow_id",
+#           "id" =>  Ecto.UUID.cast!(table_id),
+#           "name" => "steps"
+#         }
+#       }
+#     ]
+
+#     # Update the relations for the workflows table
+#     execute("""
+#     UPDATE tables
+#       SET relations = '#{Jason.encode!(steps_relations)}'
+#       WHERE name = 'steps';
+#     """)
+
+#     conditions_relations = [
+#       %{
+#         "relation_type" => "many-to-one",
+#         "references_table" => %{
+#           "column" => "id",
+#           "id" => Ecto.UUID.cast!(Utils.get_table_id_from_name("steps")),
+#           "name" => "steps"
+#         },
+#         "table" => %{
+#           "column" => "step_id",
+#           "id" =>  Ecto.UUID.cast!(Utils.get_table_id_from_name("conditions")),
+#           "name" => "conditions"
+#         }
+#       }
+#     ]
+
+#     # Update the relations for the workflows table
+#     execute("""
+#     UPDATE tables
+#       SET relations = '#{Jason.encode!(conditions_relations)}'
+#       WHERE name = 'conditions';
+#     """)
+
+
+#     actions_relations = [
+#       %{
+#         "relation_type" => "many-to-one",
+#         "references_table" => %{
+#           "column" => "id",
+#           "id" => Ecto.UUID.cast!(Utils.get_table_id_from_name("steps")),
+#           "name" => "steps"
+#         },
+#         "table" => %{
+#           "column" => "step_id",
+#           "id" =>  Ecto.UUID.cast!(Utils.get_table_id_from_name("actions")),
+#           "name" => "actions"
+#         }
+#       }
+#     ]
+
+#     # Update the relations for the workflows table
+#     execute("""
+#     UPDATE tables
+#       SET relations = '#{Jason.encode!(actions_relations)}'
+#       WHERE name = 'actions';
+#     """)
+
+
+#     workflows_table = BaseStructures.get_table_from_name!("workflows")
+#     workflows_json_schema = Jason.encode!(JsonSchemaCompiler.generate_schema(workflows_table))
+
+#     execute("""
+#     UPDATE tables SET json_schema = '#{workflows_json_schema}' WHERE name = 'workflows';
+#     """)
+
+#     steps_table = BaseStructures.get_table_from_name!("steps")
+#     steps_json_schema = Jason.encode!(JsonSchemaCompiler.generate_schema(steps_table))
+
+#     execute("""
+#     UPDATE tables SET json_schema = '#{steps_json_schema}' WHERE name = 'steps';
+#     """)
+
+#     conditions_table = BaseStructures.get_table_from_name!("conditions")
+#     conditions_json_schema = Jason.encode!(JsonSchemaCompiler.generate_schema(conditions_table))
+
+#     execute("""
+#     UPDATE tables SET json_schema = '#{conditions_json_schema}' WHERE name = 'conditions';
+#     """)
+
+#     actions_table = BaseStructures.get_table_from_name!("actions")
+#     actions_json_schema = Jason.encode!(JsonSchemaCompiler.generate_schema(actions_table))
+
+#     execute("""
+#     UPDATE tables SET json_schema = '#{actions_json_schema}' WHERE name = 'actions';
+#     """)
+
+
+#   end
+
+#   def down do
+#     execute("""
+#     UPDATE tables
+#       SET relations = NULL
+#       WHERE name = 'workflows';
+#     """)
+#     execute("""
+#     UPDATE tables
+#       SET relations = NULL
+#       WHERE name = 'steps';
+#     """)
+#     execute("""
+#     UPDATE tables
+#       SET relations = NULL
+#       WHERE name = 'steps';
+#     """)
+#     execute("""
+#     UPDATE tables
+#       SET relations = NULL
+#       WHERE name = 'conditions';
+#     """)
+#     execute("""
+#     UPDATE tables
+#       SET relations = NULL
+#       WHERE name = 'actions';
+#     """)
+#     execute("""
+#     UPDATE tables
+#       SET json_schema = NULL
+#       WHERE name = 'workflows';
+#     """)
+#     execute("""
+#     UPDATE tables
+#       SET json_schema = NULL
+#       WHERE name = 'steps';
+#     """)
+#     execute("""
+#     UPDATE tables
+#       SET json_schema = NULL
+#       WHERE name = 'conditions';
+#     """)
+#     execute("""
+#     UPDATE tables
+#       SET json_schema = NULL
+#       WHERE name = 'actions';
+#     """)
+#   end
+# end

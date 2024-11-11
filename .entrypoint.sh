@@ -1,6 +1,7 @@
 #!/bin/sh
-# set -e
-# set -x
+set -e
+set -x
+
 # Wait for the database to start
 until ./_build/prod/rel/dynamic/bin/dynamic eval "Dynamic.Repo"; do
   echo "Database is unavailable - sleeping"
@@ -8,7 +9,13 @@ until ./_build/prod/rel/dynamic/bin/dynamic eval "Dynamic.Repo"; do
 done
 
 # Perform the database migration
-./_build/prod/rel/dynamic/bin/dynamic eval "Dynamic.Release.create_and_migrate"
+if [ ! -f /tmp/setup_done ]; then
+  echo "Performing initial setup..."
+  ./_build/prod/rel/dynamic/bin/dynamic eval "Dynamic.Release.create_and_migrate"
+  touch /tmp/setup_done
+fi
 
-# Run the application
-./_build/prod/rel/dynamic/bin/dynamic start
+# Start the Elixir application
+exec "$@"
+
+

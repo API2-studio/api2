@@ -1,0 +1,11 @@
+{application,google_gax,
+             [{applications,[kernel,stdlib,elixir,logger,tesla,poison]},
+              {description,"Google API Extensions\n"},
+              {modules,['Elixir.GoogleApi.Gax.Connection',
+                        'Elixir.GoogleApi.Gax.DataWrapper',
+                        'Elixir.GoogleApi.Gax.ModelBase',
+                        'Elixir.GoogleApi.Gax.Request',
+                        'Elixir.GoogleApi.Gax.Response',
+                        'Elixir.Poison.Decoder.GoogleApi.Gax.DataWrapper']},
+              {registered,[]},
+              {vsn,"0.4.0"}]}.

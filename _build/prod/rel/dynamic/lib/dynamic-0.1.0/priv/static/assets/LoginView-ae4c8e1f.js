@@ -1,0 +1,1 @@
+import{a3 as n,al as e,a4 as a,a5 as s,am as t}from"./index-f5692b0f.js";const c={components:{Login:e}};function r(p,_,i,m,f,l){const o=a("Login");return s(),t(o)}const g=n(c,[["render",r]]);export{g as default};

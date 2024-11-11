@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 services:
   api:
     container_name: Api2
@@ -9,9 +9,12 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     env_file: .env
     networks:
       - database
+      - es_network
     ports:
       - '4000:4000'
     stdin_open: true
@@ -19,6 +22,7 @@ services:
 
   
   database:
+    container_name: Database
     env_file: .env
     image: postgres:12.4-alpine
     networks:
@@ -35,8 +39,160 @@ services:
     stdin_open: true
     tty: true
 
-networks:
-  database:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=docker-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms4g -Xmx4g"
+      - xpack.security.enabled=false               # Disable security (including authentication)
+      - xpack.security.http.ssl.enabled=false     # Disable SSL 
+      - ELASTIC_USERNAME=elastic       # Set the username
+      - ELASTIC_PASSWORD=--i1o-tRLIVf0-KqtFW-      # Set the password
+    deploy:
+      resources:
+        limits:
+          memory: 8g                     # Allocate 8 GB memory
+          cpus: '2.0'                    # Allocate 2 CPUs
+        reservations:
+          memory: 6g                     # Reserve 6 GB memory
+          cpus: '1.5'  
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - es_network
+    healthcheck:
+      test: curl -s http://elasticsearch:9200/_cluster/health | grep -E '"status":"(yellow|green)"'
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    stdin_open: true
+    tty: true
+
+
+  prometheus:
+    container_name: Prometheus
+    restart: always
+    image: prom/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - api
+    env_file: .env
+    networks:
+      - database
+      - es_network
+    ports:
+      - '9090:9090'
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+
+  grafana:
+    # Change latest with your target version, if needed
+    image: grafana/grafana-enterprise
+    container_name: Grafana
+    restart: unless-stopped
+    ports:
+      - 3000:3000/tcp
+    volumes:
+      # Use your plugin folder (for example, redshift-datasource)
+      - ./grafana.ini:/etc/grafana/custom.ini
+      - grafana_data:/var/lib/grafana
+      # Chanhe the logo with your own
+      - ./grafana/img/icon.svg:/usr/share/grafana/public/img/grafana_icon.svg
+      - ./grafana/img/fav32.png:/usr/share/grafana/public/img/fav32.png
+      - ./grafana/img/background_light.svg:/usr/share/grafana/public/img/g8_login_light.svg
+      - ./grafana/img/background_dark.svg:/usr/share/grafana/public/img/g8_login_dark.svg
+    environment:
+      - GF_PATHS_CONFIG=/etc/grafana/custom.ini
+      - GF_RENDERING_SERVER_URL=http://renderer:8081/render
+      - GF_LOG_LEVEL=debug
+      - GF_RENDERING_CALLBACK_URL=http://grafana:3000/
+      - GF_LOG_FILTERS=rendering:debug
+      - GF_USERS_DEFAULT_THEME=dark
+      ## Enable Anonymous Authentication
+      - GF_SECURITY_ADMIN_USER=admin  # Admin username
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Admin password
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+    networks:
+      - database
+      - es_network
+    stdin_open: true
+    tty: true
+    depends_on:
+      - prometheus
+    command: 
+      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|AppTitle="Grafana"|AppTitle="API2 Analytics"|g' {} \;
+      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana|API2 Analytics|g' {} \;
+      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana Enterprise Edition|API2 Analytics|g' {} \;
+      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana Enterprise|API2 Analytics|g' {} \;
+      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana Cloud|API2 Analytics|g' {} \;
+      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Welcome to Grafana|Welcome to API2 Analytics|g' {} \;
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://grafana:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  renderer:
+    container_name: Renderer
+    image: grafana/grafana-image-renderer:latest
+    ports:
+      - 8081
+    networks:
+      - database
+    stdin_open: true
+    tty: true
+    depends_on:
+      - grafana
+    
+  nginx:
+    container_name: Nginx
+    restart: always
+    image: registry.gitlab.com/kairos0ne/lets_nginx
+    ports:
+      - '80:8080'
+    volumes:
+      - ./nginx.conf:/etc/nginx/sites-available/default
+    networks:
+      - database
+      - es_network
+    stdin_open: true
+    tty: true
+    depends_on:
+      - grafana
+      # - gui
+      - api
+      - prometheus
+      - elasticsearch
+
 
 volumes:
-  database_data:
+  database_data: {}
+  es_data:
+    driver: local
+  prometheus_data: {}
+  grafana_data: {}
+  secrets: {}
+
+networks:
+  database:
+  es_network:
+
+

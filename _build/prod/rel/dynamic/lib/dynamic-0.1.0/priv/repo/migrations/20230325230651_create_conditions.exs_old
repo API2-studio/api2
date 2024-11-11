@@ -1,0 +1,48 @@
+# defmodule Dynamic.Repo.Migrations.CreateConditions do
+#   alias Dynamic.Utils
+#   use Ecto.Migration
+
+
+#   @system_id Ecto.UUID.dump!("00000000-0000-0000-0000-000000000000") |> Ecto.UUID.cast!()
+
+#   def change do
+#     create table(:conditions, primary_key: false, options: "INHERITS (base)") do
+#       add :id, :uuid, null: false, autogenerate: true
+#       add :name, :string
+#       add :order, :integer
+#       add :active, :boolean
+#       add :description, :string
+#       add :field, :string
+#       add :operator, :string
+#       add :value, :string
+#       add :type, :string
+#       add :settings, :map
+
+#       add :step_id, references(:steps, on_delete: :delete_all, type: :uuid)
+
+#       timestamps([type: :timestamptz, extended: true, abbrev: true])
+#     end
+#     create unique_index(:conditions, [:id])
+#     create index(:conditions, [:step_id])
+
+#     permissions = %{ conditions: [:create, :read, :update, :delete] }
+
+#     execute("""
+#     INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
+#       VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'conditions', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'conditions' AND t.table_schema = 'public'), '#{@system_id}', '#{@system_id}', NULL, NULL);
+#     """)
+
+#     # Update the permissions for the workflows table
+
+#     execute("""
+#     UPDATE tables
+#       SET permissions = '#{Jason.encode!(permissions)}'
+#       WHERE name = 'conditions';
+#     """)
+
+#   end
+
+#   def down do
+#     drop table(:conditions)
+#   end
+# end
