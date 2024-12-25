@@ -9,8 +9,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
   def change do
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'roles', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'roles' AND t.table_schema = 'public'), '#{@system_id}', '#{@system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'roles', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'roles' AND t.table_schema = 'public'), '#{@system_id}', '#{@system_id}', NULL, NULL, false);
     """)
     # BaseStructures.create_table(%{
     #   name: "roles",
@@ -21,8 +21,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
     # })
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'groups', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'groups' AND t.table_schema = 'public'), '#{@system_id}', '#{@system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'groups', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'groups' AND t.table_schema = 'public'), '#{@system_id}', '#{@system_id}', NULL, NULL, false);
     """)
     # BaseStructures.create_table(%{
     #   name: "groups",
@@ -33,8 +33,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
     # })
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'users', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'users' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'users', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'users' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL, false);
     """)
     # BaseStructures.create_table(%{
     #   name: "users",
@@ -45,8 +45,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
     # })
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'user_roles', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'user_roles' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'user_roles', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'user_roles' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL, false);
     """)
     # BaseStructures.create_table(%{
     #   name: "user_roles",
@@ -58,8 +58,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
 
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'group_roles', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'group_roles' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'group_roles', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'group_roles' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL, false);
     """)
     # BaseStructures.create_table(%{
     #   name: "group_roles",
@@ -70,8 +70,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
     # })
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'user_groups', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'user_groups' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'user_groups', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'user_groups' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL, false);
     """)
     # BaseStructures.create_table(%{
     #   name: "user_groups",
@@ -82,8 +82,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
     # })
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'documents', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'documents' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'documents', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'documents' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL, true);
     """)
     # BaseStructures.create_table(%{
     #   name: "documents",
@@ -94,8 +94,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
     # })
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'tables', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'tables' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'tables', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'tables' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL, true);
     """)
     # BaseStructures.create_table(%{
     #   name: "tables",
@@ -106,8 +106,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
     # })
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'records', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'records' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'records', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'records' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL, true);
     """)
     # BaseStructures.create_table(%{
     #   name: "records",
@@ -118,8 +118,8 @@ defmodule Dynamic.Repo.Migrations.TablesData do
     # })
 
     execute("""
-    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'views', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'views' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL);
+    INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'views', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'views' AND t.table_schema = 'public'), '#{ @system_id}', '#{ @system_id}', NULL, NULL, true);
     """)
     # BaseStructures.create_table(%{
     #   name: "views",

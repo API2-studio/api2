@@ -23,8 +23,8 @@ defmodule Dynamic.Repo.Migrations.CreateConfigsTable do
     # Add configs to the tables table
 
     execute("""
-      INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'configs', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'configs' AND t.table_schema = 'public'), '#{@system_id}', '#{@system_id}', NULL, NULL);
+      INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'configs', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'configs' AND t.table_schema = 'public'), '#{@system_id}', '#{@system_id}', NULL, NULL, false);
     """)
 
     # Add permissions to the permissions table

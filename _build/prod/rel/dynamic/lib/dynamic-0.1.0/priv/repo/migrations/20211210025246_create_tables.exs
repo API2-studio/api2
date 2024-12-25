@@ -13,6 +13,7 @@ defmodule Dynamic.Repo.Migrations.CreateTables do
       add :json_schema, :map
       add :json_schema_ui, :map
       add :relations, :map
+      add :searchable, :boolean, default: false
 
       timestamps([type: :timestamptz, extended: true, abbrev: true])
     end

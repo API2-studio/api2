@@ -10,7 +10,7 @@ defmodule Dynamic.Repo.Migrations.CreateEndpointsTable do
       add(:url, :string, null: false)
       add(:method, :string, null: false)
       add(:json_schema, :map, null: false)
-      add(:query, :map, null: false)
+      add(:query, :map, null: true, default: nil)
       add(:source_table_id, :uuid, null: true, default: nil)
       add(:response_template, :map, null: true, default: nil)
       add(:auth_required, :boolean, null: false, default: false)
@@ -33,8 +33,8 @@ defmodule Dynamic.Repo.Migrations.CreateEndpointsTable do
     # Add endpoints to the tables table
 
     execute("""
-      INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions)
-      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'endpoints', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'endpoints' AND t.table_schema = 'public'), '#{@system_id}', '#{@system_id}', NULL, NULL);
+      INSERT INTO tables (id, inserted_at, updated_at, name, parent, schema, created_by, updated_by, relations, permissions, searchable)
+      VALUES (gen_random_uuid()::uuid, timezone('utc', now()), timezone('utc', now()), 'endpoints', 'base', (SELECT json_agg(json_build_object('name', t.column_name, 'type', t.udt_name)) FROM information_schema.columns AS t WHERE table_name = 'endpoints' AND t.table_schema = 'public'), '#{@system_id}', '#{@system_id}', NULL, NULL, false);
     """)
 
     # Add permissions to the permissions table

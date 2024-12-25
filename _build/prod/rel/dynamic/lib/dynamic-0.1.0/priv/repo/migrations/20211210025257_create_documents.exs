@@ -16,6 +16,12 @@ defmodule Dynamic.Repo.Migrations.CreateDocuments do
       timestamps([type: :timestamptz, extended: true, abbrev: true])
     end
     create unique_index(:documents, [:id])
+    create unique_index(:documents, [:record_id])
+    # create unique_index(:documents, [:table_name, :table_id])
+
+    create index(:documents, [:created_by])
+    create index(:documents, [:updated_by])
+
   end
 
   def down do
