@@ -48,14 +48,19 @@
 									"items": {
 										"type": ["string", "null"]
 									}
+								},
+								{
+									"type": ["null"]
 								}
 							]
 						}
 					},
 					"required": [
-						"key",
-						"value"
+						"key"
 					]
+				},
+				{
+					"type": "null"
 				}
 			]
         }

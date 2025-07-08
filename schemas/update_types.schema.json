@@ -26,6 +26,9 @@
 					"minLength": 2,
 					"maxLength": 64
 				},
+				"through_table": {
+					"type": ["string", "null"]
+				},
 				"required": {
 					"type": "boolean"
 				},
@@ -123,13 +126,142 @@
 					"maxLength": 64
 				}
 			},
-			"dependencies": {
-				"foreign_key": ["references_table", "references_column", "relation_type"],
-				"references_table": ["foreign_key"],
-				"references_column": ["foreign_key"],
-				"relation_type": ["foreign_key"]
-			},
+			"anyOf": [
+				{
+					"properties": {
+						"foreign_key": { "const": true }
+					},
+					"required": ["references_table", "references_column", "relation_type"]
+				},
+				{
+					"properties": {
+						"relation_type": { "const": "many-to-many" }
+					},
+					"required": ["through_table"]
+				},
+				{
+					"properties": {
+						"foreign_key": { "const": false }
+					},
+					"not": {
+						"required": ["references_table", "references_column", "relation_type", "through_table"]
+					}
+				},
+				{
+					"properties": {
+						"action": { "const": ["create", "delete"] }
+					},
+					"not": {
+						"required": ["oid"]
+					}
+				},
+				{
+					"properties": {
+						"action": { "const": "update" }
+					},
+					"required": ["oid"]
+				},
+				{
+					"properties": {
+						"type": { "const": "json" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "jsonb" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "varchar" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "text" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "timestamp" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "uuid" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "boolean" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "numeric" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "integer" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "real" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "double_precision" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "smallint" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "bigint" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "serial" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "bigserial" }
+					},
+					"required": ["expression"]
+				},
+				{
+					"properties": {
+						"type": { "const": "timestamptz" }
+					},
+					"required": ["expression"]
+				}
+			],
 			"required": [
+				"foreign_key",
+				"required",
+				"unique",
 				"action"
 			]
 		},
@@ -185,6 +317,7 @@
 	},
 	"required": [
 		"name",
+		"type",
 		"options"
 	]
 }

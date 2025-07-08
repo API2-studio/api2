@@ -2,23 +2,45 @@
 import Config
 alias Dynamic.Converter
 
+config :dynamic, ecto_repos: [Dynamic.Repo, Dynamic.ObanRepo]
+
+
 config :dynamic, Dynamic.Repo,
-  username: System.fetch_env!("POSTGRES_USER"),
-  password: System.fetch_env!("POSTGRES_PASSWORD"),
-  database: System.fetch_env!("POSTGRES_DB"),
-  hostname: System.fetch_env!("POSTGRES_HOST"),
-  port: System.fetch_env!("POSTGRES_PORT"),
-  pool_size: 10,
+  database: System.fetch_env!("POSTGRES_DB") || "canopus",
+  username: System.fetch_env!("POSTGRES_USER") || "postgres",
+  password: System.fetch_env!("POSTGRES_PASSWORD") || "postgres",
+  hostname: System.fetch_env!("POSTGRES_HOST") || "database",
+  port: System.fetch_env!("POSTGRES_PORT") || 5432,
   timezone: "UTC",
   migration_timestamps: [type: :utc_datetime, time_zone: "UTC"],
-  timestamps: [extended: true, abbrev: true]
+  migration_primary_key: [type: :uuid, name: :id],
+  migration_foreign_key: [column: :id, type: :uuid],
+  timestamps: [extended: true, abbrev: true],
+  pool_size: 20,
+  timeout: 30_000,
+  queue_target: 50, # Reduce queue wait times
+  queue_interval: 1_000 # Lower queue timeout
 
-config :dynamic, ecto_repos: [Dynamic.Repo]
+
+config :dynamic, Dynamic.ObanRepo,
+  database: "dynamic_oban",
+  username: System.fetch_env!("POSTGRES_USER") || "postgres",
+  password: System.fetch_env!("POSTGRES_PASSWORD") || "postgres",
+  hostname: System.fetch_env!("POSTGRES_HOST") || "database",
+  port: System.fetch_env!("POSTGRES_PORT") || 5432,
+  pool_size: 20,
+  timeout: 30_000,
+  queue_target: 50, # Reduce queue wait times
+  queue_interval: 1_000 # Lower queue timeout
+
+
+config :hammer,
+  backend: {Hammer.Backend.ETS, [expiry_ms: 60_000 * 5, cleanup_interval_ms: 60_000]}
 
 config :dynamic, Oban,
-  repo: Dynamic.Repo,
+
   plugins: [
-    Oban.Plugins.Pruner,
+    {Oban.Plugins.Pruner, max_age: 86_400},
     {Oban.Plugins.Cron,
      crontab: [
       #  Every Minute
@@ -33,7 +55,9 @@ config :dynamic, Oban,
       #  {"@daily", MyApp.AnotherDailyWorker}
      ]}
   ],
-  queues: [default: 10, events: 10]
+  queues: [default: 2, events: 2, request_logs: 2, endpoints: 2]
+
+
 
 config :dynamic, Dynamic.PromEx,
   manual_metrics_start_delay: :no_delay,
@@ -122,56 +146,7 @@ config :waffle,
   # This configuration will be read by the `mix elasticsearch.build` task,
   # described below.
   indexes: %{
-  #   # This is the base name of the Elasticsearch index. Each index will be
-  #   # built with a timestamp included in the name, like "posts-5902341238".
-  #   # It will then be aliased to "posts" for easy querying.
-  #   tables: %{
-  #     # This file describes the mappings and settings for your index. It will
-  #     # be posted as-is to Elasticsearch when you create your index, and
-  #     # therefore allows all the settings you could post directly.
-  #     settings: "priv/elasticsearch/tables.json",
 
-  #     # This store module must implement a store behaviour. It will be used to
-  #     # fetch data for each source in each indexes' `sources` list, below:
-  #     store: Dynamic.Elasticsearch.ElasticsearchStore,
-
-  #     # This is the list of data sources that should be used to populate this
-  #     # index. The `:store` module above will be passed each one of these
-  #     # sources for fetching.
-  #     #
-  #     # Each piece of data that is returned by the store must implement the
-  #     # Elasticsearch.Document protocol.
-  #     sources: [Dynamic.Structures.Table, Dynamic.Structures.View, Dynamic.Structures.Record, Dynamic.Structures.Document],
-
-  #     # When indexing data using the `mix elasticsearch.build` task,
-  #     # control the data ingestion rate by raising or lowering the number
-  #     # of items to send in each bulk request.
-  #     bulk_page_size: 5000,
-
-  #     # Likewise, wait a given period between posting pages to give
-  #     # Elasticsearch time to catch up.
-  #     bulk_wait_interval: 15_000, # 15 seconds
-
-  #     # By default bulk indexing uses the "create" action. To allow existing
-  #     # documents to be replaced, use the "index" action instead.
-  #     bulk_action: "index"
-  #   },
-  #   views: %{
-  #     settings: "priv/elasticsearch/views.json",
-  #     store: Dynamic.ElasticsearchStore,
-  #     sources: [Dynamic.View],
-  #     bulk_page_size: 5000,
-  #     bulk_wait_interval: 15_000,
-  #     bulk_action: "index"
-  #   },
-  #   records: %{
-  #     settings: "priv/elasticsearch/records.json",
-  #     store: Dynamic.Elasticsearch.ElasticsearchStore,
-  #     sources: [Dynamic.Record],
-  #     bulk_page_size: 5000,
-  #     bulk_wait_interval: 15_000,
-  #     bulk_action: "create"
-  #   },
     documents: %{
       settings: "priv/elasticsearch/documents.json",
       store: Dynamic.Elasticsearch.ElasticsearchStore,
@@ -206,6 +181,15 @@ config :waffle,
     }
   }
 
+config :kafka_ex,
+  brokers: [{System.fetch_env!("KAFKA_BROKER_HOST"), String.to_integer(System.fetch_env!("KAFKA_BROKER_PORT") || "9092")}],  # Or your Kafka host(s)
+  kafka_version: System.fetch_env!("KAFKA_VERSION"),          # Match your Kafka broker version
+  disable_default_worker: System.fetch_env!("KAFKA_DISABLE_DEFAULT_WORKER") || false,  # Optional: true if you manage your own worker
+  sync_timeout: System.get_env("KAFKA_SYNC_TIMEOUT", "5000") |> String.to_integer(),  # Optional: timeout for synchronous operations
+  max_retries: System.get_env("KAFKA_MAX_RETRIES", "3") |> String.to_integer()  # Optional: max retries for failed operations
+
+config :dynamic, Dynamic.Vault,
+  default: true
 
 config :reverse_proxy_plug, :http_client, ReverseProxyPlug.HTTPClient.Adapters.Finch
   # END RUN TIME CONFIG

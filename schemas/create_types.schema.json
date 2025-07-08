@@ -37,6 +37,9 @@
 							"many-to-many"
 						]
 				},
+				"through_table": {
+					"type": ["string", "null"]
+				},
 				"required": {
 					"type": "boolean"
 				},
@@ -48,12 +51,33 @@
 					"maxLength": 256
 				}
 			},
-			"dependencies": {
-				"foreign_key": ["references_table", "references_column", "relation_type"],
-				"references_table": ["foreign_key"],
-				"references_column": ["foreign_key"],
-				"relation_type": ["foreign_key"]
-			}
+			"anyOf": [
+				{
+					"properties": {
+						"foreign_key": { "const": true }
+					},
+					"required": ["references_table", "references_column", "relation_type"]
+				},
+				{
+					"properties": {
+						"relation_type": { "const": "many-to-many" }
+					},
+					"required": ["through_table"]
+				},
+				{
+					"properties": {
+						"foreign_key": { "const": false }
+					},
+					"not": {
+						"required": ["references_table", "references_column", "relation_type", "through_table"]
+					}
+				}
+			],
+			"required": [
+				"foreign_key",
+				"required",
+				"unique"
+			]
 		},
 		"type": {
 			"type": "string",
@@ -125,6 +149,7 @@
 	},
 	"required": [
 		"name",
-		"type"
+		"type",
+		"options"
 	]
 }

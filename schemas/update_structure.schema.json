@@ -11,16 +11,14 @@
 		},
 		"schema": {
 			"type": "array",
-			"items": [
-				{
-					"type": "object",
-					"oneOf": [
-						{
-							"$ref": "lib/schemas/update_types.schema.json"
-						}
-					]
-				}
-			]
+			"items": {
+				"type": "object",
+				"oneOf": [
+					{
+						"$ref": "lib/schemas/update_types.schema.json"
+					}
+				]
+			}
 		}
 	},
 	"required": [

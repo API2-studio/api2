@@ -10,7 +10,6 @@
 			"enum": [
 				"create",
 				"read",
-				"update",
 				"delete"
 			]
 		},
@@ -22,6 +21,9 @@
 			"type": "object",
 			"oneOf": [
 				{
+					"$ref": "lib/schemas/read_index.schema.json"
+				},
+				{
 					"$ref": "lib/schemas/create_index.schema.json"
 				},
 				{
@@ -30,15 +32,13 @@
 			]
 		},
 		"page": {
-			"type": "string",
+			"type": ["string", "null", "number"],
 			"pattern": "^[0-9]+$"
 		},
 		"page_size": {
-			"type" : "string",
+			"type" : ["string", "null", "number"],
 			"pattern": "^[0-9]+$"
 		}
 	},
-	"required": [
-		"body"
-	]
+	"required": ["body"]
 }

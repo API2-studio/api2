@@ -5,25 +5,30 @@
 # Inside the script, you can read and write to any of your
 # repositories directly:
 #
-#     Dynamic.Repo.insert!(%Dynamic.SomeSchema{})
+#     Dynamic.RepoWithHooks.insert!(%Dynamic.SomeSchema{})
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 
 # You can also use the Ecto.Query API to fetch data:
 #
+alias Dynamic.Docs.JsonSchemaCompiler
+alias Dynamic.Docs.JsonSchemaCompiler
 alias Dynamic.Repo
+alias Dynamic.RepoWithHooks
 alias Dynamic.BaseContent
 alias Dynamic.BaseStructures
 alias Dynamic.Docs.DocsGenerator
 alias Dynamic.AvatarUploader.File
 alias Dynamic.Elasticsearch.Index
 alias Dynamic.Endpoints.EndpointHandler
+alias Dynamic.Docs.JsonSchemaCompiler
 alias Dynamic.Utils
 alias Dynamic.JWT
 
 # start the repo to be able to use it
-# Repo.start_link()
+Repo.start_link(pool_size: 2)
+
 
 import Logger
 
@@ -104,21 +109,16 @@ case BaseContent.get_role_by_name!("admin") do
                 "json_schema" => %{
                   "type" => "object",
                   "properties" =>
-                    Enum.reduce(table.schema, %{}, fn %{"name" => name}, acc ->
-                      case name do
-                        "acl" -> acc
-                        "password" -> acc
-                        "password_confirmation" -> acc
-                        "password_hash" -> acc
-                        _ -> Map.put(acc, name, %{"type" => "string"})
-                      end
-                    end)
+                    JsonSchemaCompiler.compile_properties(table.schema)
                     |> Map.put("limit", %{"type" => "string"})
                     |> Map.put("offset", %{"type" => "string"})
                     |> Map.put("order_column", %{"type" => "string"})
                     |> Map.put("order_direction", %{"type" => "string"})
                     |> Map.put("page", %{"type" => "string"})
-                    |> Map.put("page_size", %{"type" => "string"}),
+                    |> Map.put("page_size", %{"type" => "string"})
+                    |> Map.put("archived_at", %{"type" => "string", "format" => "date-time"})
+                    |> Map.put("deleted_at", %{"type" => "string", "format" => "date-time"})
+                    |> Map.delete("acl"),
                   "required" => [
                     "limit",
                     "offset",
@@ -202,7 +202,7 @@ case BaseContent.get_role_by_name!("admin") do
               }
             end)
             |> Enum.map(fn endpoint ->
-              EndpointHandler.create_endpoint(user, endpoint)
+              EndpointHandler.seed_endpoint(user, endpoint)
             end)
 
           payload2 =
@@ -275,7 +275,7 @@ case BaseContent.get_role_by_name!("admin") do
               }
             end)
             |> Enum.map(fn endpoint ->
-              EndpointHandler.create_endpoint(user, endpoint)
+              EndpointHandler.seed_endpoint(user, endpoint)
             end)
 
           payload3 =
@@ -290,27 +290,11 @@ case BaseContent.get_role_by_name!("admin") do
                     "json_schema" => %{
                       "type" => "object",
                       "properties" =>
-                        table.schema
-                        |> Enum.reduce(%{}, fn %{"name" => name}, acc ->
-                          Map.put(acc, name, %{
-                            "type" => "string"
-                          })
-                          |> Map.reject(fn {key, _} ->
-                            key == "password_hash"
-                          end)
-                          |> Map.reject(fn {key, _} ->
-                            key == "acl"
-                          end)
-                          |> Map.put("password", %{
-                            "type" => "string"
-                          })
-                          |> Map.put("password_confirmation", %{
-                            "type" => "string"
-                          })
-                          |> Map.put("role_id", %{
-                            "type" => "string"
-                          })
-                        end),
+                      JsonSchemaCompiler.compile_properties(table.schema)
+                      |> Map.put("role_id", %{"type" => "string", "format" => "uuid"})
+                      |> Map.put("password", %{"type" => "string", "format" => "password"})
+                      |> Map.put("password_confirmation", %{"type" => "string", "format" => "password"})
+                      |> Map.delete("acl"),
                       "required" => [
                         "email",
                         "password",
@@ -366,22 +350,55 @@ case BaseContent.get_role_by_name!("admin") do
                     }
                   }
 
+                "files" ->
+                  %{
+                    "url" => "/api/v1/base/#{table.name}",
+                    "method" => "POST",
+                    "json_schema" => %{
+                      "type" => "object",
+                      "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                      |> Map.delete("acl"),
+                      "required" => [],
+                      "additionalProperties" => false
+                    },
+                    "source_table_id" => table.id,
+                    "query" => nil,
+                    "response_template" => %{
+                      "fields" =>
+                        table.schema
+                        |> Enum.reduce([], fn %{"name" => name}, acc ->
+                          acc ++ [name] ++ ["file_url"]
+                        end)
+                        |> Enum.reject(fn field ->
+                          field == "acl"
+                        end)
+                    },
+                    "auth_required" => true,
+                    "rate_limit" => 100,
+                    #  Change this to false if you want to disable the endpoint TODO: disable this by default
+                    "enabled" => true,
+                    "description" => "Create a new #{table.name}",
+                    "query_params_schema" => %{},
+                    "url_params_schema" => %{},
+                    "body_params_schema" =>
+                      Enum.reduce(table.schema, %{}, fn %{"name" => name}, acc ->
+                        # merge all the columns into a map with the column name as the key and the column name in {} as the value
+                        Map.put(acc, name, "{#{name}}")
+                      end),
+                    "permissions" => %{
+                      "#{table.name}_create_endpoint" => [
+                        "create"
+                      ]
+                    }
+                  }
                 _ ->
                   %{
                     "url" => "/api/v1/base/#{table.name}",
                     "method" => "POST",
                     "json_schema" => %{
                       "type" => "object",
-                      "properties" =>
-                        table.schema
-                        |> Enum.reduce(%{}, fn %{"name" => name}, acc ->
-                          Map.put(acc, name, %{
-                            "type" => "string"
-                          })
-                          |> Map.reject(fn {key, _} ->
-                            key == "acl"
-                          end)
-                        end),
+                      "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                      |> Map.delete("acl"),
                       "required" => [],
                       "additionalProperties" => false
                     },
@@ -418,7 +435,7 @@ case BaseContent.get_role_by_name!("admin") do
               end
             end)
             |> Enum.map(fn endpoint ->
-              EndpointHandler.create_endpoint(user, endpoint)
+              EndpointHandler.seed_endpoint(user, endpoint)
             end)
 
           payload4 =
@@ -432,28 +449,12 @@ case BaseContent.get_role_by_name!("admin") do
                     "method" => "PUT",
                     "json_schema" => %{
                       "type" => "object",
-                      "properties" =>
-                        table.schema
-                        |> Enum.reduce(%{}, fn %{"name" => name}, acc ->
-                          Map.put(acc, name, %{
-                            "type" => "string"
-                          })
-                          |> Map.reject(fn {key, _} ->
-                            key == "password_hash"
-                          end)
-                          |> Map.reject(fn {key, _} ->
-                            key == "acl"
-                          end)
-                          |> Map.put("password", %{
-                            "type" => "string"
-                          })
-                          |> Map.put("password_confirmation", %{
-                            "type" => "string"
-                          })
-                          |> Map.put("role_id", %{
-                            "type" => "string"
-                          })
-                        end),
+                      "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                      |> Map.put("id", %{"type" => "string", "format" => "uuid"})
+                      |> Map.put("role_id", %{"type" => "string", "format" => "uuid"})
+                      |> Map.put("password", %{"type" => "string", "format" => "password"})
+                      |> Map.put("password_confirmation", %{"type" => "string", "format" => "password"})
+                      |> Map.delete("acl"),
                       "required" => [
                         "email",
                         "password",
@@ -518,16 +519,9 @@ case BaseContent.get_role_by_name!("admin") do
                     "method" => "PUT",
                     "json_schema" => %{
                       "type" => "object",
-                      "properties" =>
-                        table.schema
-                        |> Enum.reduce(%{}, fn %{"name" => name}, acc ->
-                          Map.put(acc, name, %{
-                            "type" => "string"
-                          })
-                          |> Map.reject(fn {key, _} ->
-                            key == "acl"
-                          end)
-                        end),
+                      "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                      |> Map.put("id", %{"type" => "string", "format" => "uuid"})
+                      |> Map.delete("acl"),
                       "required" => [],
                       "additionalProperties" => false
                     },
@@ -566,7 +560,7 @@ case BaseContent.get_role_by_name!("admin") do
               end
             end)
             |> Enum.map(fn endpoint ->
-              EndpointHandler.create_endpoint(user, endpoint)
+              EndpointHandler.seed_endpoint(user, endpoint)
             end)
 
           payload5 =
@@ -576,7 +570,13 @@ case BaseContent.get_role_by_name!("admin") do
               %{
                 "url" => "/api/v1/base/#{table.name}/{id}",
                 "method" => "DELETE",
-                "json_schema" => %{},
+                "json_schema" => %{
+                  "type" => "object",
+                  "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                  |> Map.delete("acl"),
+                  "required" => ["id"],
+                  "additionalProperties" => false
+                },
                 "source_table_id" => table.id,
                 "query" => nil,
                 "response_template" => %{
@@ -616,7 +616,7 @@ case BaseContent.get_role_by_name!("admin") do
               }
             end)
             |> Enum.map(fn endpoint ->
-              EndpointHandler.create_endpoint(user, endpoint)
+              EndpointHandler.seed_endpoint(user, endpoint)
             end)
         else
           {:error, _reason} -> Logger.info("Admin user not created")
@@ -688,21 +688,16 @@ case BaseContent.get_role_by_name!("admin") do
             "json_schema" => %{
               "type" => "object",
               "properties" =>
-                Enum.reduce(table.schema, %{}, fn %{"name" => name}, acc ->
-                  case name do
-                    "acl" -> acc
-                    "password" -> acc
-                    "password_confirmation" -> acc
-                    "password_hash" -> acc
-                    _ -> Map.put(acc, name, %{"type" => "string"})
-                  end
-                end)
+                JsonSchemaCompiler.compile_properties(table.schema)
                 |> Map.put("limit", %{"type" => "string"})
                 |> Map.put("offset", %{"type" => "string"})
                 |> Map.put("order_column", %{"type" => "string"})
                 |> Map.put("order_direction", %{"type" => "string"})
                 |> Map.put("page", %{"type" => "string"})
-                |> Map.put("page_size", %{"type" => "string"}),
+                |> Map.put("page_size", %{"type" => "string"})
+                |> Map.put("archived_at", %{"type" => "string", "format" => "date-time"})
+                |> Map.put("deleted_at", %{"type" => "string", "format" => "date-time"})
+                |> Map.delete("acl"),
               "required" => [
                 "limit",
                 "offset",
@@ -786,7 +781,7 @@ case BaseContent.get_role_by_name!("admin") do
           }
         end)
         |> Enum.map(fn endpoint ->
-          EndpointHandler.create_endpoint(user, endpoint)
+          EndpointHandler.seed_endpoint(user, endpoint)
         end)
 
       payload2 =
@@ -800,7 +795,8 @@ case BaseContent.get_role_by_name!("admin") do
               "type" => "object",
               "properties" => %{
                 "id" => %{
-                  "type" => "string"
+                  "type" => "string",
+                  "format" => "uuid"
                 }
               },
               "required" => [],
@@ -859,7 +855,7 @@ case BaseContent.get_role_by_name!("admin") do
           }
         end)
         |> Enum.map(fn endpoint ->
-          EndpointHandler.create_endpoint(user, endpoint)
+          EndpointHandler.seed_endpoint(user, endpoint)
         end)
 
       payload3 =
@@ -873,28 +869,11 @@ case BaseContent.get_role_by_name!("admin") do
                 "method" => "POST",
                 "json_schema" => %{
                   "type" => "object",
-                  "properties" =>
-                    table.schema
-                    |> Enum.reduce(%{}, fn %{"name" => name}, acc ->
-                      Map.put(acc, name, %{
-                        "type" => "string"
-                      })
-                      |> Map.reject(fn {key, _} ->
-                        key == "password_hash"
-                      end)
-                      |> Map.reject(fn {key, _} ->
-                        key == "acl"
-                      end)
-                      |> Map.put("password", %{
-                        "type" => "string"
-                      })
-                      |> Map.put("password_confirmation", %{
-                        "type" => "string"
-                      })
-                      |> Map.put("role_id", %{
-                        "type" => "string"
-                      })
-                    end),
+                  "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                  |> Map.put("role_id", %{"type" => "string", "format" => "uuid"})
+                  |> Map.put("password", %{"type" => "string", "format" => "password"})
+                  |> Map.put("password_confirmation", %{"type" => "string", "format" => "password"})
+                  |> Map.delete("acl"),
                   "required" => [
                     "email",
                     "password",
@@ -943,6 +922,47 @@ case BaseContent.get_role_by_name!("admin") do
                       "role_id" => "{role_id}"
                     }
                   ]),
+                "permissions" => %{
+                  "#{table.name}_create_endpoint" => [
+                    "create"
+                  ]
+                }
+              }
+            "files" ->
+              %{
+                "url" => "/api/v1/base/#{table.name}",
+                "method" => "POST",
+                "json_schema" => %{
+                  "type" => "object",
+                  "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                  |> Map.delete("acl"),
+                  "required" => [],
+                  "additionalProperties" => false
+                },
+                "source_table_id" => table.id,
+                "query" => nil,
+                "response_template" => %{
+                  "fields" =>
+                    table.schema
+                    |> Enum.reduce([], fn %{"name" => name}, acc ->
+                      acc ++ [name] ++ ["file_url"]
+                    end)
+                    |> Enum.reject(fn field ->
+                      field == "acl"
+                    end)
+                },
+                "auth_required" => true,
+                "rate_limit" => 100,
+                #  Change this to false if you want to disable the endpoint TODO: disable this by default
+                "enabled" => true,
+                "description" => "Create a new #{table.name}",
+                "query_params_schema" => %{},
+                "url_params_schema" => %{},
+                "body_params_schema" =>
+                  Enum.reduce(table.schema, %{}, fn %{"name" => name}, acc ->
+                    # merge all the columns into a map with the column name as the key and the column name in {} as the value
+                    Map.put(acc, name, "{#{name}}")
+                  end),
                 "permissions" => %{
                   "#{table.name}_create_endpoint" => [
                     "create"
@@ -956,16 +976,8 @@ case BaseContent.get_role_by_name!("admin") do
                 "method" => "POST",
                 "json_schema" => %{
                   "type" => "object",
-                  "properties" =>
-                    table.schema
-                    |> Enum.reduce(%{}, fn %{"name" => name}, acc ->
-                      Map.put(acc, name, %{
-                        "type" => "string"
-                      })
-                      |> Map.reject(fn {key, _} ->
-                        key == "acl"
-                      end)
-                    end),
+                  "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                  |> Map.delete("acl"),
                   "required" => [],
                   "additionalProperties" => false
                 },
@@ -1002,7 +1014,7 @@ case BaseContent.get_role_by_name!("admin") do
           end
         end)
         |> Enum.map(fn endpoint ->
-          EndpointHandler.create_endpoint(user, endpoint)
+          EndpointHandler.seed_endpoint(user, endpoint)
         end)
 
       payload4 =
@@ -1016,28 +1028,11 @@ case BaseContent.get_role_by_name!("admin") do
                 "method" => "PUT",
                 "json_schema" => %{
                   "type" => "object",
-                  "properties" =>
-                    table.schema
-                    |> Enum.reduce(%{}, fn %{"name" => name}, acc ->
-                      Map.put(acc, name, %{
-                        "type" => "string"
-                      })
-                      |> Map.reject(fn {key, _} ->
-                        key == "password_hash"
-                      end)
-                      |> Map.reject(fn {key, _} ->
-                        key == "acl"
-                      end)
-                      |> Map.put("password", %{
-                        "type" => "string"
-                      })
-                      |> Map.put("password_confirmation", %{
-                        "type" => "string"
-                      })
-                      |> Map.put("role_id", %{
-                        "type" => "string"
-                      })
-                    end),
+                  "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                  |> Map.put("role_id", %{"type" => "string", "format" => "uuid"})
+                  |> Map.put("password", %{"type" => "string", "format" => "password"})
+                  |> Map.put("password_confirmation", %{"type" => "string", "format" => "password"})
+                  |> Map.delete("acl"),
                   "required" => [
                     "email",
                     "password",
@@ -1102,16 +1097,8 @@ case BaseContent.get_role_by_name!("admin") do
                 "method" => "PUT",
                 "json_schema" => %{
                   "type" => "object",
-                  "properties" =>
-                    table.schema
-                    |> Enum.reduce(%{}, fn %{"name" => name}, acc ->
-                      Map.put(acc, name, %{
-                        "type" => "string"
-                      })
-                      |> Map.reject(fn {key, _} ->
-                        key == "acl"
-                      end)
-                    end),
+                  "properties" => JsonSchemaCompiler.compile_properties(table.schema)
+                  |> Map.delete("acl"),
                   "required" => [],
                   "additionalProperties" => false
                 },
@@ -1150,7 +1137,7 @@ case BaseContent.get_role_by_name!("admin") do
           end
         end)
         |> Enum.map(fn endpoint ->
-          EndpointHandler.create_endpoint(user, endpoint)
+          EndpointHandler.seed_endpoint(user, endpoint)
         end)
 
       payload5 =
@@ -1160,7 +1147,17 @@ case BaseContent.get_role_by_name!("admin") do
           %{
             "url" => "/api/v1/base/#{table.name}/{id}",
             "method" => "DELETE",
-            "json_schema" => %{},
+            "json_schema" => %{
+              "type" => "object",
+              "properties" => %{
+                "id" => %{
+                  "type" => "string",
+                  "format" => "uuid"
+                }
+              } ,
+              "required" => ["id"],
+              "additionalProperties" => false
+            },
             "source_table_id" => table.id,
             "query" => nil,
             "response_template" => %{
@@ -1200,7 +1197,7 @@ case BaseContent.get_role_by_name!("admin") do
           }
         end)
         |> Enum.map(fn endpoint ->
-          EndpointHandler.create_endpoint(user, endpoint)
+          EndpointHandler.seed_endpoint(user, endpoint)
         end)
     else
       {:error, _reason} -> Logger.info("Admin user not created")
@@ -1212,4 +1209,7 @@ case BaseContent.get_role_by_name!("admin") do
 end
 
 # Stop the repo
-# Repo.stop()
+Repo.stop()
+
+# Stop the application
+# Application.stop()

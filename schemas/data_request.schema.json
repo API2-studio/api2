@@ -30,11 +30,11 @@
 			]
 		},
 		"page": {
-			"type": "string",
+			"type": ["string", "null", "number"],
 			"pattern": "^[0-9]+$"
 		},
 		"page_size": {
-			"type" : "string",
+			"type" : ["string", "null", "number"],
 			"pattern": "^[0-9]+$"
 		}
 	},

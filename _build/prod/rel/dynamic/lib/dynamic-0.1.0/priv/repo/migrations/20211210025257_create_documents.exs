@@ -2,8 +2,8 @@ defmodule Dynamic.Repo.Migrations.CreateDocuments do
   use Ecto.Migration
 
   def change do
-    create table(:documents, primary_key: false, options: "INHERITS (base)") do
-      add :id, :uuid, null: false, autogenerate: true # primary key
+    create table(:documents, options: "INHERITS (base)") do
+      # add :id, :uuid, null: false, autogenerate: true # primary key
       add :record_id, :uuid, null: false # record id (e.g. "12345678-1234-1234-1234-1234567890ab")
       add :table_name, :string # table name (e.g. "users")
       add :table_id, :uuid, null: false # table id (e.g. "12345678-1234-1234-1234-1234567890ab")
@@ -15,10 +15,15 @@ defmodule Dynamic.Repo.Migrations.CreateDocuments do
 
       timestamps([type: :timestamptz, extended: true, abbrev: true])
     end
-    create unique_index(:documents, [:id])
+    # create unique_index(:documents, [:id])
     create unique_index(:documents, [:record_id])
-    # create unique_index(:documents, [:table_name, :table_id])
-
+    create unique_index(:documents, [:table_name, :record_id])
+    create index(:documents, [:table_name])
+    create index(:documents, [:table_id])
+    create index(:documents, [:inserted_at])
+    create index(:documents, [:updated_at])
+    create index(:documents, [:deleted_at])
+    create index(:documents, [:archived_at])
     create index(:documents, [:created_by])
     create index(:documents, [:updated_by])
 
