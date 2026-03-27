@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+spec:
+  serviceName: zookeeper
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+      {{- if .Values.zookeeper.redeployOnUpgrade }}
+      annotations:
+        # Force pod recreation on each helm upgrade when ephemeral data is desired.
+        rollme: {{ randAlphaNum 8 | quote }}
+      {{- end }}
+    spec:
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | nindent 8 }}
+{{- end }}
+      containers:
+        - name: zookeeper
+          image: {{ .Values.zookeeper.image }}
+          ports:
+            - containerPort: 2181
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: ZOOKEEPER_CLIENT_PORT
+              value: "2181"
+            - name: ZOOKEEPER_TICK_TIME
+              value: "2000"
+            - name: KAFKA_OPTS
+              value: "-Dzookeeper.4lw.commands.whitelist=ruok"
+          resources:
+{{- if .Values.zookeeper.resources }}
+{{ toYaml .Values.zookeeper.resources | nindent 12 }}
+{{- end }}
+          volumeMounts:
+            - mountPath: /var/lib/zookeeper/data
+{{- if .Values.zookeeper.persistence.enabled }}
+              name: data
+{{- else }}
+              name: data-ephemeral
+{{- end }}
+            - mountPath: /var/lib/zookeeper/logs
+{{- if .Values.zookeeper.persistence.enabled }}
+              name: logs
+{{- else }}
+              name: logs-ephemeral
+{{- end }}
+{{- if not .Values.zookeeper.persistence.enabled }}
+      volumes:
+        - name: data-ephemeral
+          emptyDir: {}
+        - name: logs-ephemeral
+          emptyDir: {}
+{{- end }}
+{{- if .Values.zookeeper.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.zookeeper.storage }}
+    - metadata:
+        name: logs
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.zookeeper.storage }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+spec:
+  ports:
+    - port: 2181
+      targetPort: 2181
+  selector:
+    app: zookeeper
