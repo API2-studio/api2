@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+binaryData:
+  fav32.png: {{ .Files.Get "files/fav32.png" | b64enc }}
+data:
+  grafana.ini: |
+{{ .Files.Get "files/grafana.ini" | indent 4 }}
+  grafana.sh: |
+{{ .Files.Get "files/grafana.sh" | indent 4 }}
+  icon.svg: |
+{{ .Files.Get "files/icon.svg" | indent 4 }}
+  background_light.svg: |
+{{ .Files.Get "files/background_light.svg" | indent 4 }}
+  background_dark.svg: |
+{{ .Files.Get "files/background_dark.svg" | indent 4 }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.grafana.storage }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+      annotations:
+        checksum/grafana-config: {{ (printf "%s%s%s%s%s%s" (.Files.Get "files/grafana.ini") (.Files.Get "files/grafana.sh") (.Files.Get "files/icon.svg") (.Files.Get "files/background_light.svg") (.Files.Get "files/background_dark.svg") (.Files.Get "files/fav32.png" | b64enc)) | sha256sum }}
+    spec:
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | nindent 8 }}
+{{- end }}
+      containers:
+        - name: grafana
+          image: {{ .Values.grafana.image }}
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: GF_PATHS_CONFIG
+              value: /etc/grafana/custom.ini
+            - name: GF_RENDERING_SERVER_URL
+              value: http://renderer:8081/render
+            - name: GF_LOG_LEVEL
+              value: debug
+            - name: GF_RENDERING_CALLBACK_URL
+              value: http://grafana:3000/
+            - name: GF_LOG_FILTERS
+              value: rendering:debug
+            - name: GF_USERS_DEFAULT_THEME
+              value: dark
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: pa55word
+            - name: GF_SECURITY_DISABLE_GRAVATAR
+              value: "true"
+          volumeMounts:
+            - mountPath: /etc/grafana/custom.ini
+              name: config
+              subPath: grafana.ini
+            - mountPath: /grafana.sh
+              name: config
+              subPath: grafana.sh
+            - mountPath: /usr/share/grafana/public/img/grafana_icon.svg
+              name: config
+              subPath: icon.svg
+            - mountPath: /usr/share/grafana/public/img/fav32.png
+              name: config
+              subPath: fav32.png
+            - mountPath: /usr/share/grafana/public/img/g8_login_light.svg
+              name: config
+              subPath: background_light.svg
+            - mountPath: /usr/share/grafana/public/img/g8_login_dark.svg
+              name: config
+              subPath: background_dark.svg
+            - mountPath: /var/lib/grafana
+              name: data
+          command: ["/bin/sh", "-c"]
+          args:
+            - /grafana.sh && exec /usr/share/grafana/bin/grafana-server --config=/etc/grafana/custom.ini
+          resources:
+{{- if .Values.grafana.resources }}
+{{ toYaml .Values.grafana.resources | nindent 12 }}
+{{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: grafana-config
+            defaultMode: 0755
+        - name: data
+          persistentVolumeClaim:
+            claimName: grafana-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: grafana

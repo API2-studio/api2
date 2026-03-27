@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+spec:
+  serviceName: elasticsearch
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | nindent 8 }}
+{{- end }}
+      containers:
+        - name: elasticsearch
+          image: {{ .Values.elasticsearch.image }}
+          ports:
+            - containerPort: 9200
+            - containerPort: 9300
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: node.name
+              value: elasticsearch
+            - name: cluster.name
+              value: docker-cluster
+            - name: discovery.type
+              value: single-node
+            - name: bootstrap.memory_lock
+              value: "false"
+            - name: ES_JAVA_OPTS
+              value: {{ .Values.elasticsearch.javaOpts | quote }}
+            - name: xpack.security.enabled
+              value: "false"
+            - name: xpack.security.http.ssl.enabled
+              value: "false"
+            - name: xpack.ml.enabled
+              value: "false"
+            - name: ingest.geoip.downloader.enabled
+              value: "false"
+            - name: xpack.monitoring.collection.enabled
+              value: "false"
+            - name: node.store.allow_mmap
+              value: "false"
+            - name: ELASTIC_USERNAME
+              value: {{ .Values.elasticsearch.username | quote }}
+            - name: ELASTIC_PASSWORD
+              value: {{ .Values.elasticsearch.password | quote }}
+{{- with .Values.elasticsearch.extraEnv }}
+{{- range $name, $value := . }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+{{- end }}
+{{- end }}
+          resources:
+{{- if .Values.elasticsearch.resources }}
+{{ toYaml .Values.elasticsearch.resources | nindent 12 }}
+{{- end }}
+          volumeMounts:
+            - mountPath: /usr/share/elasticsearch/data
+              name: data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.elasticsearch.storage }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+spec:
+  ports:
+    - name: http
+      port: 9200
+      targetPort: 9200
+    - name: transport
+      port: 9300
+      targetPort: 9300
+  selector:
+    app: elasticsearch

@@ -1,0 +1,12 @@
+
+apiVersion: v2
+name: dynamic-stack
+description: Monolithic application stack for dynamic environments
+type: application
+version: 0.1.0
+appVersion: "1.0"
+dependencies:
+  - name: traefik
+    repository: https://traefik.github.io/charts
+    version: "34.5.0"
+    condition: traefik.enabled
