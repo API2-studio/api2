@@ -3,15 +3,17 @@ services:
   api:
     container_name: Api2
     restart: always
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${API_IMAGE:-api2studio/canopus-api:1.0.1}
+    pull_policy: always
     depends_on:
       database:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
     env_file: .env
+    environment:
+      - GCP_CREDENTIALS=/app/secrets/application_default_credentials.json
+      - CLOAK_KEY=/app/secrets/cloak_key
     networks:
       - database
       - es_network
@@ -19,12 +21,14 @@ services:
       - '4000:4000'
     stdin_open: true
     tty: true
+    volumes:
+      - ./secrets:/app/secrets:ro
+      - ./secrets:/secrets:ro
 
-  
   database:
     container_name: Database
     env_file: .env
-    image: postgres:12.4-alpine
+    image: postgres:15.3
     networks:
       - database
     ports:
@@ -78,7 +82,6 @@ services:
       retries: 5
     stdin_open: true
     tty: true
-
 
   prometheus:
     container_name: Prometheus
@@ -150,18 +153,178 @@ services:
       timeout: 10s
       retries: 5
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: Zookeeper
+    ports:
+      - "127.0.0.1:2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=ruok"
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./zookeeper_data:/var/lib/zookeeper/data
+      - ./zookeeper_logs:/var/lib/zookeeper/logs
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: Kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    restart: always
+    ports:
+      - "127.0.0.1:9092:9092"
+      - "127.0.0.1:29092:29092"  # Internal access for containers
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:9092", "--describe"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./kafka_data:/var/lib/kafka/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: Kafka-ui
+    ports:
+      - "8090:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+    restart: always
+    env_file: .env
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      SERVER_SERVLET_CONTEXT_PATH: /kafka-ui
+      KAFKA_UI_CONFIG_BASE_PATH: /kafka-ui
+    networks:
+      - database
+    stdin_open: true
+    tty: true
+    volumes:
+      - kafka_ui_data:/var/lib/kafka-ui/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: Loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - ./loki/chunks:/loki/chunks
+      - ./loki/index:/loki/index
+      - ./loki/cache:/loki/cache
+      - ./loki/rules:/loki/rules
+      - ./loki/compactor:/loki/compactor
+      - ./loki/wal:/loki/wal
+      - ./loki/alertmanager:/loki/alertmanager
+    environment:
+      - LOKI_PORT=3100
+      - LOKI_CONFIG_FILE=/etc/loki/local-config.yaml
+      - LOKI_STORAGE_TYPE=filesystem
+      - LOKI_STORAGE_FILESYSTEM_DIRECTORY=/loki/chunks
+      - LOKI_STORAGE_BOLTDB_SHIPPER_ACTIVE_INDEX_DIRECTORY=/loki/index
+      - LOKI_STORAGE_BOLTDB_SHIPPER_CACHE_LOCATION=/loki/cache
+      - LOKI_STORAGE_BOLTDB_SHIPPER_SHARED_STORE=filesystem
+      - LOKI_SCHEMA_CONFIG_CONFIGS_0_FROM=2020-10-24
+      - LOKI_SCHEMA_CONFIG_CONFIGS_0_STORE=boltdb-shipper
+      - LOKI_SCHEMA_CONFIG_CONFIGS_0_OBJECT_STORE=filesystem
+      - LOKI_SCHEMA_CONFIG_CONFIGS_0_SCHEMA=v11
+      - LOKI_SCHEMA_CONFIG_CONFIGS_0_INDEX_PREFIX=index_
+      - LOKI_SCHEMA_CONFIG_CONFIGS_0_INDEX_PERIOD=24h
+      - LOKI_LIMITS_CONFIG_ENFORCE_METRIC_NAME=false
+      - LOKI_LIMITS_CONFIG_REJECT_OLD_SAMPLES=true
+      - LOKI_LIMITS_CONFIG_REJECT_OLD_SAMPLES_MAX_AGE=168h
+      - LOKI_CHUNK_STORE_CONFIG_MAX_LOOK_BACK_PERIOD=0s
+      - LOKI_TABLE_MANAGER_RETENTION_DELETES_ENABLED=false
+      - LOKI_TABLE_MANAGER_RETENTION_PERIOD=0s
+      - LOKI_RULES_ENABLE_ALERTMANAGER_V2=true
+      - LOKI_RULES_ALERTMANAGER_URL=http://alertmanager:9093
+      - LOKI_RULES_STORAGE_TYPE=local
+      - LOKI_RULES_LOCAL_DIRECTORY=/loki/rules
+      - LOKI_RULES_RING_KVSTORE_STORE=inmemory
+      - LOKI_RULES_RING_REPLICATION_FACTOR=1
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - database
+      - es_network
+    stdin_open: true
+    tty: true
+
+
+  promtail: 
+    container_name: Promtail
+    image: grafana/promtail:3.0.0
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock # Docker socket for container discovery 
+      - /var/log:/var/log                # Host logs
+      - ./promtail-config.yaml:/etc/promtail/config.yml:ro
+      - /etc/machine-id:/etc/machine-id # For unique ID
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - database
+      - es_network  
+    restart: unless-stopped
+    ports:
+      - "9080:9080"  # Promtail HTTP server port
+    stdin_open: true
+    tty: true
+  
   renderer:
     container_name: Renderer
     image: grafana/grafana-image-renderer:latest
     ports:
-      - 8081
+      - "127.0.0.1:8081:8081"
     networks:
       - database
     stdin_open: true
     tty: true
     depends_on:
       - grafana
-    
+    environment:
+      - GF_RENDERING_SERVER_URL=http://renderer:8081/render
+      - GF_RENDERING_CALLBACK_URL=http://grafana:3000/
+      - GF_RENDERING_CHROME_PATH=/usr/bin/chromium-browser
+      - GF_RENDERING_CHROME_DISABLE_GPU=true
+      - GF_RENDERING_CHROME_NO_SANDBOX=true
+      - GF_RENDERING_CHROME_ENABLE_PRINT_BACKGROUND=true
+      - GF_RENDERING_CHROME_HEADLESS=true
+    volumes:
+      - renderer_data:/tmp/render
+
   nginx:
     container_name: Nginx
     restart: always
@@ -182,7 +345,6 @@ services:
       - prometheus
       - elasticsearch
 
-
 volumes:
   database_data: {}
   es_data:
@@ -190,9 +352,13 @@ volumes:
   prometheus_data: {}
   grafana_data: {}
   secrets: {}
+  kafka_data: {}
+  kafka_ui_data: {}
+  renderer_data: {}
+  zookeeper_data: {}
+  zookeeper_logs: {}
+  loki_data: {}
 
 networks:
   database:
   es_network:
-
-

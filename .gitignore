@@ -1,2 +1,11 @@
-
+/.env
 /secrets
+/_build
+/kafka-logs
+/kafka-data
+/kafka_data
+/zookeeper-logs
+/zookeeper-data
+/zookeeper_data
+/loki
+.DS_Store
