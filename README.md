@@ -123,6 +123,61 @@ Rollback by setting `API_IMAGE` back to a previous tag and running the same comm
 docker compose down
 ```
 
+## Deploy With Helm (Kubernetes)
+
+This repo also includes a Helm chart at `helm/api2`.
+
+Current defaults in `helm/api2/values.yaml`:
+
+- `namespace: api2`
+- `api.image: api2studio/canopus-api:1.0.1`
+
+Prerequisites:
+
+- Kubernetes cluster access (`kubectl` configured)
+- Helm 3 installed
+
+Install or upgrade:
+
+```bash
+helm upgrade --install api2 ./helm/dynamic-stack -n api2 --create-namespace
+```
+
+Check resources:
+
+```bash
+kubectl get pods -n api2
+kubectl get svc -n api2
+kubectl get ingress -n api2
+```
+
+View release status:
+
+```bash
+helm status api2 -n api2
+helm list -n api2
+```
+
+Upgrade API image without editing files:
+
+```bash
+helm upgrade --install api2 ./helm/api2 -n api2 \
+  --set api.image=api2studio/canopus-api:1.0.1
+```
+
+Rollback:
+
+```bash
+helm history api2 -n api2
+helm rollback api2 <REVISION> -n api2
+```
+
+Uninstall:
+
+```bash
+helm uninstall api2 -n api2
+```
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).

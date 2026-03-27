@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: promtail
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Name }}-promtail
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "namespaces"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Release.Name }}-promtail
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Release.Name }}-promtail
+subjects:
+  - kind: ServiceAccount
+    name: promtail
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+data:
+  promtail.yaml: |
+{{ .Files.Get "files/promtail-config.yaml" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+  template:
+    metadata:
+      labels:
+        app: promtail
+      annotations:
+        checksum/promtail-config: {{ .Files.Get "files/promtail-config.yaml" | sha256sum }}
+    spec:
+      serviceAccountName: promtail
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | nindent 8 }}
+{{- end }}
+      containers:
+        - name: promtail
+          image: {{ .Values.promtail.image }}
+          args:
+            - "-config.file=/etc/promtail/promtail.yaml"
+            - "-client.url=http://loki:3100/loki/api/v1/push"
+          ports:
+            - containerPort: 9080
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - mountPath: /var/log/pods
+              name: pods
+              readOnly: true
+            - mountPath: /var/lib/docker/containers
+              name: docker-containers
+              readOnly: true
+            - mountPath: /var/lib/containerd
+              name: containerd
+              readOnly: true
+            - mountPath: /run/log/journal
+              name: journal
+              readOnly: true
+            - mountPath: /etc/machine-id
+              name: machine-id
+              readOnly: true
+            - mountPath: /var/log
+              name: var-log
+            - mountPath: /etc/promtail/promtail.yaml
+              name: config
+              subPath: promtail.yaml
+      volumes:
+        - name: pods
+          hostPath:
+            path: /var/log/pods
+        - name: docker-containers
+          hostPath:
+            path: /var/lib/docker/containers
+        - name: containerd
+          hostPath:
+            path: /var/lib/containerd
+        - name: var-log
+          hostPath:
+            path: /var/log
+        - name: journal
+          hostPath:
+            path: /run/log/journal
+        - name: machine-id
+          hostPath:
+            path: /etc/machine-id
+            type: File
+        - name: config
+          configMap:
+            name: promtail-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: promtail
+spec:
+  ports:
+    - port: 9080
+      targetPort: 9080
+  selector:
+    app: promtail

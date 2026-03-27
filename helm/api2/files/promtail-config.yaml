@@ -1,0 +1,60 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: kubernetes-pods
+    kubernetes_sd_configs:
+      - role: pod
+
+    pipeline_stages:
+      - cri: {}
+
+    relabel_configs:
+      # Required for DaemonSet-local scraping: bind targets to this node.
+      - source_labels: [__meta_kubernetes_pod_node_name]
+        target_label: __host__
+
+      # Exclude Kubernetes pause/sandbox container logs.
+      - source_labels: [__meta_kubernetes_pod_container_name]
+        regex: POD
+        action: drop
+
+      # Copy all pod labels as Loki labels.
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+      - source_labels: [__meta_kubernetes_pod_container_name]
+        target_label: container
+
+      - source_labels: [__meta_kubernetes_pod_node_name]
+        target_label: node
+
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+
+      # Keep service_name for Explore defaults.
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: service_name
+
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_name]
+        separator: /
+        target_label: job
+
+      # Canonical pod log path on Kubernetes nodes.
+      - source_labels: [__meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
+        separator: /
+        replacement: /var/log/pods/*$1/$2/*.log
+        target_label: __path__

@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+spec:
+  serviceName: kafka
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+      {{- if .Values.kafka.redeployOnUpgrade }}
+      annotations:
+        # Force pod recreation on each helm upgrade when ephemeral data is desired.
+        rollme: {{ randAlphaNum 8 | quote }}
+      {{- end }}
+    spec:
+      enableServiceLinks: false
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | nindent 8 }}
+{{- end }}
+      containers:
+        - name: kafka
+          image: {{ .Values.kafka.image }}
+          ports:
+            - containerPort: 9092
+            - containerPort: 29092
+          env:
+            - name: KAFKA_BROKER_ID
+              value: {{ .Values.kafka.brokerId | quote }}
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              value: zookeeper:2181
+            - name: KAFKA_LISTENERS
+              value: {{ .Values.kafka.listeners | quote }}
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: {{ .Values.kafka.advertisedListeners | quote }}
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT"
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: PLAINTEXT_INTERNAL
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_HEAP_OPTS
+              value: {{ .Values.kafka.heapOpts | quote }}
+          resources:
+{{- if .Values.kafka.resources }}
+{{ toYaml .Values.kafka.resources | nindent 12 }}
+{{- end }}
+          volumeMounts:
+            - mountPath: /var/lib/kafka/data
+{{- if .Values.kafka.persistence.enabled }}
+              name: data
+{{- else }}
+              name: data-ephemeral
+{{- end }}
+{{- if not .Values.kafka.persistence.enabled }}
+      volumes:
+        - name: data-ephemeral
+          emptyDir: {}
+{{- end }}
+{{- if .Values.kafka.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.kafka.storage }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+spec:
+  ports:
+    - name: broker
+      port: 9092
+      targetPort: 9092
+    - name: internal
+      port: 29092
+      targetPort: 29092
+  selector:
+    app: kafka
