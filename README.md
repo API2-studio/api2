@@ -7,7 +7,7 @@ This repository is for running API2 as an example environment using `docker-comp
 Set the image you want to run:
 
 ```bash
-export API_IMAGE=api2-studio/canopus-api:v1.0.0
+export API_IMAGE=api2studio/canopus-api:1.0.1
 ```
 
 If `API_IMAGE` is not set, `docker-compose.yml` defaults to:
