@@ -140,7 +140,7 @@ Prerequisites:
 Install or upgrade:
 
 ```bash
-helm upgrade --install api2 ./helm/dynamic-stack -n api2 --create-namespace
+helm upgrade --install api2 ./helm/api2 -n api2 --create-namespace
 ```
 
 Check resources:
