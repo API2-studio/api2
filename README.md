@@ -235,7 +235,6 @@ Uninstall:
 helm uninstall api2 -n api2
 ```
 
->>>>>>> Stashed changes
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).
