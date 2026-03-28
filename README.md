@@ -178,7 +178,6 @@ Uninstall:
 helm uninstall api2 -n api2
 ```
 
-<<<<<<< Updated upstream
 =======
 ## Deploy With Helm (Kubernetes)
 
