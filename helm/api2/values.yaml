@@ -65,7 +65,6 @@ env:
   OTP_APP_ENV_VAR_NAME: dynamic
   LOG_RETENTION_DAYS: "90"
   DATA_RETENTION_ID_DAYS: "3000"
-  GCP_CREDENTIALS: ./secrets/application_default_credentials.json
   GOOGLE_CLIENT_EMAIL: api2-client@api2-mvp.iam.gserviceaccount.com
   ADMIN_AVATAR_PATH: "./priv/static/Icon 64.jpeg"
   GOOGLE_PROJECT_ID: api2-mvp
@@ -83,8 +82,8 @@ env:
   GCP_BUCKET_PATH: api2-mvp
   GCP_SCOPE: https://www.googleapis.com/auth/devstorage.full_control
   GCP_STORAGE_DIR: /uploads
-  VUE_APP_API_BASE_URL: http://localhost:4000/api/v1
-  VUE_APP_PROXY_BASE_URL: http://localhost:4000
+  VUE_APP_API_BASE_URL: http://localhost/api/v1
+  VUE_APP_PROXY_BASE_URL: http://localhost
   ELASTIC_USER: elastic
   ELASTIC_HOST: http://elasticsearch:9200
   ACCESS_TOKEN_TTL_IN_MINUTES: "2999"
@@ -98,26 +97,40 @@ env:
   ELASTIC_SEARCH_ENABLED: "true"
   RATE_LIMIT: "100"
   RATE_LIMIT_PERIOD: "60000"
+  RATE_PERIOD: "60000"
   RATE_LIMIT_MESSAGE: "Computer says, no!."
   TARPIT_DELAY: "1000"
   TARPIT_MAX_DELAY: "60000"
   # Keep default fetch size conservative to avoid OOM on large tables.
   DEFAULT_LIMIT: "1000"
   DEFAULT_OFFSET: "0"
+  REQUEST_LOGGING_ENABLED: "true"
+  REQUEST_LOG_SAMPLE_RATE: "0.2"
+  REQUEST_LOG_INCLUDE_HEADERS: "true"
+  ENDPOINT_CACHE_STALE_CHECK_MS: "120000"
+  USER_TOKEN_CACHE_TTL_MS: "600000"
   COMPILE_ENDPOINTS_DEFAULT: "true"
+  COMPILE_DOCS_ON_START: "true"
   DELETE_STRATEGY_SOFT: "false"
   WORKFLOW_KAFKA_PORT: "29092"
   WORKFLOW_KAFKA_TOPIC: workflow_topic
   WORKFLOW_KAFKA_GROUP_ID: workflow_group
+  WORKFLOW_KAFKA_ENABLED: "true"
   KAFKA_BROKER_HOST: kafka
   KAFKA_BROKER_PORT: "29092"
   KAFKA_VERSION: "7.4.0"
   KAFKA_DISABLE_DEFAULT_WORKER: "false"
   KAFKA_SYNC_TIMEOUT: "5000"
   KAFKA_MAX_RETRIES: "3"
+  DB_POOL_SIZE: "10"
+  OBAN_POOL_SIZE: "5"
   KAFKA_BROKER_URL: kafka:29092
   KAFKA_BROKER_SSL: "false"
   COMPILE_OPPOSITE_RELATIONS: "true"
+  MCP_INTERNAL_API_KEY: "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnQtZXN6bXN3NDZ5IiwiYXVkIjoiZHluYW1pYyIsImV4cCI6NDkzMTc5MTIwMCwiaWF0IjoxNzc4MTkxMjAwLCJpc3MiOiJkeW5hbWljIiwianRpIjoiNDAwNTI5YTAtNDZlNC00NTA2LWFhNmQtYTkyNThjMjQzYmI4IiwibmJmIjoxNzc4MTkxMTk5LCJzdWIiOiIyYjU2MGY4MS03ZmE1LTQ4ZGUtOWJmOS05NzdjZWY2ZTkzOTEiLCJ0eXAiOiJzZGsifQ.S2Hadd8orA9gizYo63T252r2QPIu4FtGrnfmdFpCJD2AJ324SdhyQUgY8Za8NG9aR3YCHM2Bqw0GDIM43QofGA"
+  MCP_API2_BASE_URL: "http://localhost:4000"
+  MCP_API2_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE"
+  MCP_API2_ALLOWED_PATH_PREFIXES: "/api/v1/data,/api/v1/structure,/api/v1/views,/api/v1/authentication,/api/v1/users,/api/v1/roles,/api/v1/indexes,/api/v1/docs,/api/v1/audit,/api/v1/jobs,/api/v1/dashboards,/api/v1/helpers,/api/v1/access_controls,/api/v1/import,/api/v1/logs,/api/v1/search,/api/v1/files,/api/v1/endpoints,/api/v1/workflows,/api/v1/events,/api/v1/webhooks,/api/v1/channels,/api/v1/ws,/api/v1/groups,/api/v1/clients,/api/v1/sdk,/api/v1/dynamic,/api/v1/todos"
 
 secrets:
   GUARDIAN_SECRET_KEY: JhuzDzC3qhncUV4Xr+a/j1CCW6RRm66zu+uMbFd2NKcuI5NbfOc9ao1rsJNYTF0/

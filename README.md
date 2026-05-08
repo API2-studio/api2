@@ -7,19 +7,20 @@ This repository is for running API2 as an example environment using `docker-comp
 Set the image you want to run:
 
 ```bash
-export API_IMAGE=api2studio/canopus-api:1.0.1
+export API_IMAGE=api2studio/canopus-api:1.0.5
 ```
 
 If `API_IMAGE` is not set, `docker-compose.yml` defaults to:
 
-- `api2studio/canopus-api:1.0.1`
+- `api2studio/canopus-api:1.0.5`
 
 ## Required Environment Variables
 
 Create or update `.env` with your runtime values.
 
-Update these values before running in your environment:
+Update these values before running in your environment (examples provided are placeholders, see `.env` for defaults):
 
+### Examples please see .env file for defaults:
 - `API_IMAGE` (optional override if not using default image tag)
 - `COMPOSE_PROJECT_NAME`
 - `GUARDIAN_SECRET_KEY`
