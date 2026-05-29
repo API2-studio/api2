@@ -21,6 +21,10 @@ spec:
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}
+          env:
+            # Use a subdirectory to avoid initdb failure when the PVC root has lost+found.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           envFrom:
             - configMapRef:
                 name: app-config

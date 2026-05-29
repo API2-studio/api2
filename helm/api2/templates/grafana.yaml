@@ -2,6 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-config
+  labels:
+    app: grafana
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
 binaryData:
   fav32.png: {{ .Files.Get "files/fav32.png" | b64enc }}
 data:
@@ -20,6 +25,11 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: grafana-data
+  labels:
+    app: grafana
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
@@ -30,6 +40,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
+  labels:
+    app: grafana
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
 spec:
   replicas: 1
   selector:
@@ -39,6 +54,9 @@ spec:
     metadata:
       labels:
         app: grafana
+        app.kubernetes.io/name: grafana
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: observability
       annotations:
         checksum/grafana-config: {{ (printf "%s%s%s%s%s%s" (.Files.Get "files/grafana.ini") (.Files.Get "files/grafana.sh") (.Files.Get "files/icon.svg") (.Files.Get "files/background_light.svg") (.Files.Get "files/background_dark.svg") (.Files.Get "files/fav32.png" | b64enc)) | sha256sum }}
     spec:
@@ -46,6 +64,9 @@ spec:
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | nindent 8 }}
 {{- end }}
+      securityContext:
+        fsGroup: 472
+        fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: grafana
           image: {{ .Values.grafana.image }}
@@ -65,6 +86,10 @@ spec:
               value: debug
             - name: GF_RENDERING_CALLBACK_URL
               value: http://grafana:3000/
+            - name: GF_SERVER_ROOT_URL
+              value: "%(protocol)s://%(domain)s/grafana"
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
             - name: GF_LOG_FILTERS
               value: rendering:debug
             - name: GF_USERS_DEFAULT_THEME
@@ -96,9 +121,7 @@ spec:
               subPath: background_dark.svg
             - mountPath: /var/lib/grafana
               name: data
-          command: ["/bin/sh", "-c"]
-          args:
-            - /grafana.sh && exec /usr/share/grafana/bin/grafana-server --config=/etc/grafana/custom.ini
+          command: ["/run.sh"]
           resources:
 {{- if .Values.grafana.resources }}
 {{ toYaml .Values.grafana.resources | nindent 12 }}
@@ -116,6 +139,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: grafana
+  labels:
+    app: grafana
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
+{{- if and .Values.ingress.enabled (eq .Values.ingress.className "gce") }}
+  annotations:
+    cloud.google.com/backend-config: '{"ports":{"3000":"grafana-backendconfig"}}'
+{{- end }}
 spec:
   ports:
     - port: 3000

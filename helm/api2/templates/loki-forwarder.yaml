@@ -1,0 +1,96 @@
+{{- if .Values.lokiForwarder.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: loki-forwarder
+  labels:
+    app: loki-forwarder
+    app.kubernetes.io/name: loki-forwarder
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
+  {{- if .Values.lokiForwarder.workloadIdentityGsa }}
+  annotations:
+    iam.gke.io/gcp-service-account: {{ .Values.lokiForwarder.workloadIdentityGsa | quote }}
+  {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-forwarder-config
+  labels:
+    app: loki-forwarder
+    app.kubernetes.io/name: loki-forwarder
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+
+    positions:
+      filename: /tmp/positions.yaml
+
+    clients:
+      - url: {{ .Values.lokiForwarder.lokiPushUrl | quote }}
+
+    scrape_configs:
+      - job_name: gcp-pubsub
+        gcplog:
+          subscription_type: pull
+          project_id: {{ .Values.lokiForwarder.projectId | quote }}
+          subscription: {{ .Values.lokiForwarder.subscription | quote }}
+          use_incoming_timestamp: true
+        labels:
+          source: gcp-pubsub
+          cluster: {{ .Values.lokiForwarder.cluster | quote }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki-forwarder
+  labels:
+    app: loki-forwarder
+    app.kubernetes.io/name: loki-forwarder
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki-forwarder
+  template:
+    metadata:
+      labels:
+        app: loki-forwarder
+        app.kubernetes.io/name: loki-forwarder
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: observability
+      annotations:
+        checksum/loki-forwarder-config: {{ (printf "%s%s%s%s" .Values.lokiForwarder.lokiPushUrl .Values.lokiForwarder.projectId .Values.lokiForwarder.subscription .Values.lokiForwarder.cluster) | sha256sum }}
+    spec:
+      serviceAccountName: loki-forwarder
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | nindent 8 }}
+{{- end }}
+      containers:
+        - name: promtail
+          image: {{ .Values.lokiForwarder.image }}
+          args:
+            - "-config.file=/etc/promtail/promtail.yaml"
+          ports:
+            - containerPort: 9080
+          resources:
+{{- if .Values.lokiForwarder.resources }}
+{{ toYaml .Values.lokiForwarder.resources | nindent 12 }}
+{{- end }}
+          volumeMounts:
+            - mountPath: /etc/promtail/promtail.yaml
+              name: config
+              subPath: promtail.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: loki-forwarder-config
+{{- end }}
