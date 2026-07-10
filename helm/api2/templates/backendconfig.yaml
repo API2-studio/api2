@@ -1,4 +1,4 @@
-{{- if and .Values.ingress.enabled (eq .Values.ingress.className "gce") }}
+{{- if and .Values.ingress.enabled (eq .Values.ingress.className "gce") (.Capabilities.APIVersions.Has "cloud.google.com/v1/BackendConfig") }}
 apiVersion: cloud.google.com/v1
 kind: BackendConfig
 metadata:

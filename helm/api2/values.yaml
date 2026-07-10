@@ -133,7 +133,7 @@ env:
   KAFKA_BROKER_SSL: "false"
   COMPILE_OPPOSITE_RELATIONS: "true"
   MCP_INTERNAL_API_KEY: "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnQtZXN6bXN3NDZ5IiwiYXVkIjoiZHluYW1pYyIsImV4cCI6NDkzMTc5MTIwMCwiaWF0IjoxNzc4MTkxMjAwLCJpc3MiOiJkeW5hbWljIiwianRpIjoiNDAwNTI5YTAtNDZlNC00NTA2LWFhNmQtYTkyNThjMjQzYmI4IiwibmJmIjoxNzc4MTkxMTk5LCJzdWIiOiIyYjU2MGY4MS03ZmE1LTQ4ZGUtOWJmOS05NzdjZWY2ZTkzOTEiLCJ0eXAiOiJzZGsifQ.S2Hadd8orA9gizYo63T252r2QPIu4FtGrnfmdFpCJD2AJ324SdhyQUgY8Za8NG9aR3YCHM2Bqw0GDIM43QofGA"
-  MCP_API2_BASE_URL: "http://localhost:4000"
+  MCP_API2_BASE_URL: "https://api2.dev"
   MCP_API2_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE"
   MCP_API2_ALLOWED_PATH_PREFIXES: "/api/v1/data,/api/v1/structure,/api/v1/views,/api/v1/authentication,/api/v1/users,/api/v1/roles,/api/v1/indexes,/api/v1/docs,/api/v1/audit,/api/v1/jobs,/api/v1/dashboards,/api/v1/helpers,/api/v1/access_controls,/api/v1/import,/api/v1/logs,/api/v1/search,/api/v1/files,/api/v1/endpoints,/api/v1/workflows,/api/v1/events,/api/v1/webhooks,/api/v1/channels,/api/v1/ws,/api/v1/groups,/api/v1/clients,/api/v1/sdk,/api/v1/dynamic,/api/v1/todos"
   EMAIL_PROVIDER_SENDGRID_ENABLED: true
@@ -151,6 +151,8 @@ secrets:
   GRAFANA_PASSWORD: pa55word
   ELASTIC_PASS: --i1o-tRLIVf0-KqtFH-
   CLOAK_KEY: ./secrets/cloak_key
+  MCP_OAUTH_CODE_SECRET: "Z7m2Qv8xLp4Nc1Rw6Ty9Hs3Kd5Bj0Uf7Pa2Xe8Mn4Vr1Ct6Gy9Qw3Hb8Ks5Df2Lq"
+  SECRET_KEY_BASE: "P4A0CexnTgEeubLOh5wEya3oGC9Pl6JW+F4Rqh7rMIxLCFsJNud3ztoaDbHoTrsv"
 
 gcpCredentials:
   enabled: true

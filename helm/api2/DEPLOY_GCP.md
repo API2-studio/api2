@@ -14,9 +14,9 @@ This guide deploys the existing Helm chart to Google Kubernetes Engine using a p
 ```bash
 export PROJECT_ID="your-gcp-project-id"
 export REGION="europe-west2"
-export CLUSTER_NAME="cluster-api2"
+export CLUSTER_NAME="api2-gke"
 export NAMESPACE="api2"
-export HOSTNAME="example.com" # Your API hostname (e.g. api.example.com)
+export HOSTNAME="api2.dev" # Your API hostname (e.g. api.example.com)
 ```
 
 ## 3) Create and connect to a GKE cluster
