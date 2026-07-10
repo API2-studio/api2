@@ -179,6 +179,21 @@ Uninstall:
 helm uninstall api2 -n api2
 ```
 
+## Deploy on GCP (GKE)
+
+Use the GKE-specific guide and override values:
+
+- Guide: `helm/api2/DEPLOY_GCP.md`
+- Override values: `helm/api2/values-gcp.yaml`
+
+Deploy command:
+
+```bash
+helm upgrade --install api2 ./helm/api2 -n api2 --create-namespace \
+  -f ./helm/api2/values.yaml \
+  -f ./helm/api2/values-gcp.yaml
+```
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).

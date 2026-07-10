@@ -1,0 +1,8 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: api2-cert
+  namespace: api2
+spec:
+  domains:
+    - api2.dev

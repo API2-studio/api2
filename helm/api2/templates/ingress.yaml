@@ -62,6 +62,27 @@ spec:
                 name: api
                 port:
                   number: 4000
+          - path: /authorize
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 4000
+          - path: /authorise
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 4000
+          - path: /authorization
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 4000
           - path: /api
             pathType: Prefix
             backend:
@@ -122,6 +143,27 @@ spec:
                 port:
                   number: 8081
           - path: /api/v1/ws
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 4000
+          - path: /authorize
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 4000
+          - path: /authorise
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 4000
+          - path: /authorization
             pathType: Prefix
             backend:
               service:

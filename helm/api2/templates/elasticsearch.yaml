@@ -17,6 +17,9 @@ spec:
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | nindent 8 }}
 {{- end }}
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: elasticsearch
           image: {{ .Values.elasticsearch.image }}
@@ -73,6 +76,9 @@ spec:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
+{{- if .Values.elasticsearch.storageClassName }}
+        storageClassName: {{ .Values.elasticsearch.storageClassName | quote }}
+{{- end }}
         resources:
           requests:
             storage: {{ .Values.elasticsearch.storage }}

@@ -22,11 +22,35 @@ spec:
           image: {{ .Values.api.image }}
           ports:
             - containerPort: {{ .Values.api.port }}
+{{- if or .Values.gcpCredentials.enabled .Values.api.extraSecretEnv }}
+          env:
+{{- if .Values.gcpCredentials.enabled }}
+            - name: GCP_CREDENTIALS
+              value: {{ printf "%s/%s" (trimSuffix "/" .Values.gcpCredentials.mountPath) .Values.gcpCredentials.fileName | quote }}
+{{- end }}
+{{- range .Values.api.extraSecretEnv }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .key }}
+{{- end }}
+{{- end }}
+{{- if .Values.gcpCredentials.enabled }}
+          volumeMounts:
+            - name: gcp-credentials
+              mountPath: {{ .Values.gcpCredentials.mountPath | quote }}
+              readOnly: true
+{{- end }}
           envFrom:
             - configMapRef:
                 name: app-config
             - secretRef:
                 name: app-secrets
+{{- range .Values.api.extraEnvFromSecrets }}
+            - secretRef:
+                name: {{ . }}
+{{- end }}
           resources:
 {{- if .Values.api.resources }}
 {{ toYaml .Values.api.resources | nindent 12 }}
@@ -51,3 +75,12 @@ spec:
         - name: wait-for-es
           image: curlimages/curl:8.4.0
           command: ["sh", "-c", "until curl -fsS http://elasticsearch:9200/_cluster/health; do echo waiting for elasticsearch; sleep 3; done"]
+{{- if .Values.gcpCredentials.enabled }}
+      volumes:
+        - name: gcp-credentials
+          secret:
+            secretName: {{ default .Values.gcpCredentials.secretName .Values.gcpCredentials.existingSecret }}
+            items:
+              - key: {{ .Values.gcpCredentials.key }}
+                path: {{ .Values.gcpCredentials.fileName }}
+{{- end }}

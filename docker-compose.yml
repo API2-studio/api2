@@ -3,7 +3,7 @@ services:
   api:
     container_name: Api2
     restart: always
-    image: ${API_IMAGE:-api2studio/canopus-api:1.0.1}
+    image: ${API_IMAGE:-api2studio/canopus-api:1.1.3}
     pull_policy: always
     depends_on:
       database:
@@ -117,11 +117,6 @@ services:
       # Use your plugin folder (for example, redshift-datasource)
       - ./grafana.ini:/etc/grafana/custom.ini
       - grafana_data:/var/lib/grafana
-      # Chanhe the logo with your own
-      - ./grafana/img/icon.svg:/usr/share/grafana/public/img/grafana_icon.svg
-      - ./grafana/img/fav32.png:/usr/share/grafana/public/img/fav32.png
-      - ./grafana/img/background_light.svg:/usr/share/grafana/public/img/g8_login_light.svg
-      - ./grafana/img/background_dark.svg:/usr/share/grafana/public/img/g8_login_dark.svg
     environment:
       - GF_PATHS_CONFIG=/etc/grafana/custom.ini
       - GF_RENDERING_SERVER_URL=http://renderer:8081/render

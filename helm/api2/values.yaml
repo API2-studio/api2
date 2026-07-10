@@ -58,6 +58,11 @@ env:
   POSTGRES_HOST: database
   POSTGRES_PORT: "5432"
   POSTGRES_DB: canopus
+  OBAN_POSTGRES_DB: oban_canopus
+  OBAN_POSTGRES_USER: postgres
+  OBAN_POSTGRES_PASSWORD: po5tgre5
+  OBAN_POSTGRES_HOST: database
+  OBAN_POSTGRES_PORT: "5432"
   ADMIN_NAME: admin
   ADMIN_EMAIL: admin@api2.dev
   FILE_COPY_FOR_AVATAR: "true"
@@ -128,10 +133,14 @@ env:
   KAFKA_BROKER_SSL: "false"
   COMPILE_OPPOSITE_RELATIONS: "true"
   MCP_INTERNAL_API_KEY: "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnQtZXN6bXN3NDZ5IiwiYXVkIjoiZHluYW1pYyIsImV4cCI6NDkzMTc5MTIwMCwiaWF0IjoxNzc4MTkxMjAwLCJpc3MiOiJkeW5hbWljIiwianRpIjoiNDAwNTI5YTAtNDZlNC00NTA2LWFhNmQtYTkyNThjMjQzYmI4IiwibmJmIjoxNzc4MTkxMTk5LCJzdWIiOiIyYjU2MGY4MS03ZmE1LTQ4ZGUtOWJmOS05NzdjZWY2ZTkzOTEiLCJ0eXAiOiJzZGsifQ.S2Hadd8orA9gizYo63T252r2QPIu4FtGrnfmdFpCJD2AJ324SdhyQUgY8Za8NG9aR3YCHM2Bqw0GDIM43QofGA"
-  MCP_API2_BASE_URL: "http://localhost:4000"
+  MCP_API2_BASE_URL: "https://api2.dev"
   MCP_API2_ALLOWED_METHODS: "GET,POST,PUT,PATCH,DELETE"
   MCP_API2_ALLOWED_PATH_PREFIXES: "/api/v1/data,/api/v1/structure,/api/v1/views,/api/v1/authentication,/api/v1/users,/api/v1/roles,/api/v1/indexes,/api/v1/docs,/api/v1/audit,/api/v1/jobs,/api/v1/dashboards,/api/v1/helpers,/api/v1/access_controls,/api/v1/import,/api/v1/logs,/api/v1/search,/api/v1/files,/api/v1/endpoints,/api/v1/workflows,/api/v1/events,/api/v1/webhooks,/api/v1/channels,/api/v1/ws,/api/v1/groups,/api/v1/clients,/api/v1/sdk,/api/v1/dynamic,/api/v1/todos"
-
+  EMAIL_PROVIDER_SENDGRID_ENABLED: true
+  SENDGRID_API_KEY: <sendgrid_api_key>
+  EMAIL_PROVIDER_MAILGUN_ENABLED: false
+  MAILGUN_API_KEY: <key>
+  MAILGUN_DOMAIN: <domain>
 secrets:
   GUARDIAN_SECRET_KEY: JhuzDzC3qhncUV4Xr+a/j1CCW6RRm66zu+uMbFd2NKcuI5NbfOc9ao1rsJNYTF0/
   POSTGRES_PASSWORD: po5tgre5
@@ -142,6 +151,23 @@ secrets:
   GRAFANA_PASSWORD: pa55word
   ELASTIC_PASS: --i1o-tRLIVf0-KqtFH-
   CLOAK_KEY: ./secrets/cloak_key
+  MCP_OAUTH_CODE_SECRET: "Z7m2Qv8xLp4Nc1Rw6Ty9Hs3Kd5Bj0Uf7Pa2Xe8Mn4Vr1Ct6Gy9Qw3Hb8Ks5Df2Lq"
+  SECRET_KEY_BASE: "P4A0CexnTgEeubLOh5wEya3oGC9Pl6JW+F4Rqh7rMIxLCFsJNud3ztoaDbHoTrsv"
+
+gcpCredentials:
+  enabled: true
+  # Use an existing Kubernetes Secret name instead of creating one via this chart.
+  existingSecret: gcp-credentials
+  # Secret name created by this chart when existingSecret is empty.
+  secretName: gcp-credentials
+  # Key in the Kubernetes Secret that contains the service-account JSON.
+  key: application_default_credentials.json
+  # File name to project from the Secret key.
+  fileName: application_default_credentials.json
+  # Directory mounted into the API pod.
+  mountPath: /var/run/secrets/google
+  # Raw service-account JSON; set this via a values override file, not in git.
+  json: ""
 
 postgres:
   image: postgres:15.3
@@ -210,9 +236,14 @@ kafkaUi:
       memory: 512Mi
 
 api:
-  image: api2studio/canopus-api:1.0.1
+  image: api2studio/canopus-api:1.0.6
   port: 4000
   replicas: 1
+  # Names of existing Kubernetes Secrets to inject into the API pod env.
+  # Use this for runtime-only secrets managed outside Helm (e.g. GCP_CREDENTIALS).
+  extraEnvFromSecrets: []
+  # Explicit env var mappings from existing Kubernetes Secret keys.
+  extraSecretEnv: []
   probes:
     readiness:
       initialDelaySeconds: 30
@@ -235,6 +266,13 @@ api:
 prometheus:
   image: prom/prometheus
   storage: 10Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 
 grafana:
   image: grafana/grafana-enterprise
@@ -259,7 +297,27 @@ loki:
       memory: 512Mi
 
 promtail:
+  enabled: true
   image: grafana/promtail:3.1.1
+
+lokiForwarder:
+  enabled: false
+  image: grafana/promtail:3.1.1
+  # Pub/Sub project and subscription receiving Cloud Logging sink output.
+  projectId: ""
+  subscription: ""
+  # Optional Workload Identity GSA email (recommended on GKE).
+  workloadIdentityGsa: ""
+  # Internal Loki push URL.
+  lokiPushUrl: http://loki:3100/loki/api/v1/push
+  cluster: api2-gke
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
 
 renderer:
   image: grafana/grafana-image-renderer:latest

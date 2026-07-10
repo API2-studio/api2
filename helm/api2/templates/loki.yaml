@@ -2,6 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: loki-config
+  labels:
+    app: loki
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
 data:
   loki-config.yaml: |
 {{ .Files.Get "files/loki-config.yaml" | indent 4 }}
@@ -10,6 +15,11 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: loki-data
+  labels:
+    app: loki
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
@@ -20,6 +30,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: loki
+  labels:
+    app: loki
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
 spec:
   replicas: 1
   selector:
@@ -29,6 +44,9 @@ spec:
     metadata:
       labels:
         app: loki
+        app.kubernetes.io/name: loki
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: observability
       annotations:
         checksum/loki-config: {{ .Files.Get "files/loki-config.yaml" | sha256sum }}
     spec:
@@ -36,6 +54,9 @@ spec:
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | nindent 8 }}
 {{- end }}
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: loki
           image: {{ .Values.loki.image }}
@@ -65,6 +86,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: loki
+  labels:
+    app: loki
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: observability
 spec:
   ports:
     - port: 3100

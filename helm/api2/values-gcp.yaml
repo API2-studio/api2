@@ -1,0 +1,65 @@
+namespace: api2
+
+# GKE uses the native GCE ingress controller by default.
+traefik:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: gce
+  host: api2.dev
+  includeHostlessRule: false
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: api2-ip
+    networking.gke.io/managed-certificates: api2-cert
+
+env:
+  # Update for your public endpoint after DNS is configured.
+  MCP_API2_BASE_URL: "https://api2.dev"
+  VUE_APP_API_BASE_URL: "https://api2.dev/api/v1"
+  VUE_APP_PROXY_BASE_URL: "https://api2.dev"
+
+api:
+  extraSecretEnv:
+    - name: GCP_CREDENTIALS_JSON
+      secretName: gcp-credentials
+      key: application_default_credentials.json
+
+# Promtail uses hostPath mounts that are blocked by GKE Autopilot.
+promtail:
+  enabled: false
+
+# Autopilot-safe Loki ingestion path:
+# Cloud Logging -> Pub/Sub -> lokiForwarder (Promtail gcplog target) -> Loki.
+lokiForwarder:
+  enabled: false
+  projectId: api2-mvp
+  # Set to your Pub/Sub subscription name, then enable.
+  subscription: ""
+  # Recommended: map this KSA to a GSA with Pub/Sub subscriber permissions.
+  workloadIdentityGsa: ""
+  cluster: api2-gke
+
+elasticsearch:
+  storage: 20Gi
+  storageClassName: standard
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: 750m
+      memory: 2Gi
+  javaOpts: "-Xms512m -Xmx512m"
+
+prometheus:
+  storage: 10Gi
+  storageClassName: standard
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 768Mi
