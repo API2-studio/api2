@@ -10,9 +10,13 @@ Set the image you want to run:
 export API_IMAGE=api2studio/canopus-api:1.0.5
 ```
 
+NOTE: All available image tags are listed at [Docker Hub](https://hub.docker.com/r/api2studio/canopus-api/tags).
+
+
+
 If `API_IMAGE` is not set, `docker-compose.yml` defaults to:
 
-- `api2studio/canopus-api:1.0.5`
+- `api2studio/canopus-api:latest` (latest stable release)
 
 ## Required Environment Variables
 
