@@ -24,6 +24,11 @@ services:
     volumes:
       - ./secrets:/app/secrets:ro
       - ./secrets:/secrets:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`localhost`)"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.services.api.loadbalancer.server.port=4000"
 
   database:
     container_name: Database
@@ -82,6 +87,11 @@ services:
       retries: 5
     stdin_open: true
     tty: true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.es.rule=PathPrefix(`/elasticsearch`)
+      - traefik.http.routers.es.entrypoints=web
+      - traefik.http.services.es.loadbalancer.server.port=9200
 
   prometheus:
     container_name: Prometheus
@@ -105,6 +115,11 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prometheus.rule=PathPrefix(`/metrics`)
+      - traefik.http.routers.prometheus.entrypoints=web
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
   grafana:
     # Change latest with your target version, if needed
@@ -147,6 +162,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    labels:
+      - traefik.enable=true
+      # plain /grafana/* traffic: nginx stripped the prefix, so we do too
+      - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
+      - traefik.http.routers.grafana.entrypoints=web
+      - traefik.http.routers.grafana.middlewares=grafana-strip
+      - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+      # websocket path was NOT stripped in nginx, so give it its own higher-priority router
+      - traefik.http.routers.grafana-ws.rule=PathPrefix(`/grafana/api/live/ws`)
+      - traefik.http.routers.grafana-ws.entrypoints=web
+      - traefik.http.routers.grafana-ws.priority=10
+      - traefik.http.routers.grafana-ws.service=grafana
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
@@ -226,6 +255,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
+      - traefik.http.routers.kafka-ui.entrypoints=web
+      - traefik.http.services.kafka-ui.loadbalancer.server.port=8090
     
   loki:
     image: grafana/loki:3.0.0
@@ -275,6 +309,13 @@ services:
       - es_network
     stdin_open: true
     tty: true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.loki.rule=PathPrefix(`/loki`)
+      - traefik.http.routers.loki.entrypoints=web
+      - traefik.http.routers.loki.middlewares=loki-strip
+      - traefik.http.middlewares.loki-strip.stripprefix.prefixes=/loki
+      - traefik.http.services.loki.loadbalancer.server.port=3100
 
 
   promtail: 
@@ -319,26 +360,32 @@ services:
       - GF_RENDERING_CHROME_HEADLESS=true
     volumes:
       - renderer_data:/tmp/render
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.renderer.rule=PathPrefix(`/render`)
+      - traefik.http.routers.renderer.entrypoints=web
+      - traefik.http.services.renderer.loadbalancer.server.port=8081
 
-  nginx:
-    container_name: Nginx
+  traefik:
+    image: traefik:v3.7.7          # was traefik:3.0 — many minors/patches behind
+    container_name: traefik
     restart: always
-    image: registry.gitlab.com/kairos0ne/lets_nginx
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true          # dev-only; use an auth-protected dashboard router in prod
+      - --providers.docker=true
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.traefik.address=:8080
     ports:
-      - '80:8080'
+      - "80:80"
+      - "8080:8080"
     volumes:
-      - ./nginx.conf:/etc/nginx/sites-available/default
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - database
       - es_network
-    stdin_open: true
-    tty: true
-    depends_on:
-      - grafana
-      # - gui
-      - api
-      - prometheus
-      - elasticsearch
 
 volumes:
   database_data: {}
