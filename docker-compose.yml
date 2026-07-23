@@ -1,406 +1,415 @@
-# version: '3.8'
-services:
-  api:
-    container_name: Api2
-    restart: always
-    image: ${API_IMAGE:-api2studio/canopus-api:latest}
-    pull_policy: always
-    depends_on:
-      database:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-    env_file: .env
-    environment:
-      - GCP_CREDENTIALS=/app/secrets/application_default_credentials.json
-      - CLOAK_KEY=/app/secrets/cloak_key
-    networks:
-      - database
-      - es_network
-    ports:
-      - '4000:4000'
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./secrets:/app/secrets:ro
-      - ./secrets:/secrets:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`localhost`)"
-      - "traefik.http.routers.api.entrypoints=web"
-      - "traefik.http.services.api.loadbalancer.server.port=4000"
+  # version: '3.8'
+  services:
+    api:
+      container_name: Api2
+      restart: always
+      image: ${API_IMAGE:-api2studio/canopus-api:latest}
+      pull_policy: always
+      depends_on:
+        database:
+          condition: service_healthy
+        elasticsearch:
+          condition: service_healthy
+      env_file: .env
+      environment:
+        - GCP_CREDENTIALS=/app/secrets/application_default_credentials.json
+        - CLOAK_KEY=/app/secrets/cloak_key
+      networks:
+        - database
+        - es_network
+      ports:
+        - '4000:4000'
+      stdin_open: true
+      tty: true
+      volumes:
+        - ./secrets:/app/secrets:ro
+        - ./secrets:/secrets:ro
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.api.rule=Host(`localhost`)"
+        - "traefik.http.routers.api.entrypoints=web"
+        - "traefik.http.services.api.loadbalancer.server.port=4000"
 
-  database:
-    container_name: Database
-    env_file: .env
-    image: postgres:15.3
-    networks:
-      - database
-    ports:
-      - '7432:5432'
-    volumes:
-      - database_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    stdin_open: true
-    tty: true
+    database:
+      container_name: Database
+      env_file: .env
+      image: postgres:15.3
+      networks:
+        - database
+      ports:
+        - '7432:5432'
+      volumes:
+        - database_data:/var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U postgres"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      stdin_open: true
+      tty: true
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
-    container_name: elasticsearch
-    environment:
-      - node.name=elasticsearch
-      - cluster.name=docker-cluster
-      - discovery.type=single-node
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms4g -Xmx4g"
-      - xpack.security.enabled=false               # Disable security (including authentication)
-      - xpack.security.http.ssl.enabled=false     # Disable SSL 
-      - ELASTIC_USERNAME=elastic       # Set the username
-      - ELASTIC_PASSWORD=--i1o-tRLIVf0-KqtFW-      # Set the password
-    deploy:
-      resources:
-        limits:
-          memory: 8g                     # Allocate 8 GB memory
-          cpus: '2.0'                    # Allocate 2 CPUs
-        reservations:
-          memory: 6g                     # Reserve 6 GB memory
-          cpus: '1.5'  
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    networks:
-      - es_network
-    healthcheck:
-      test: curl -s http://elasticsearch:9200/_cluster/health | grep -E '"status":"(yellow|green)"'
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    stdin_open: true
-    tty: true
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.es.rule=PathPrefix(`/elasticsearch`)
-      - traefik.http.routers.es.entrypoints=web
-      - traefik.http.services.es.loadbalancer.server.port=9200
+    elasticsearch:
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+      container_name: elasticsearch
+      environment:
+        - node.name=elasticsearch
+        - cluster.name=docker-cluster
+        - discovery.type=single-node
+        - bootstrap.memory_lock=true
+        - "ES_JAVA_OPTS=-Xms4g -Xmx4g"
+        - xpack.security.enabled=false               # Disable security (including authentication)
+        - xpack.security.http.ssl.enabled=false     # Disable SSL 
+        - ELASTIC_USERNAME=elastic       # Set the username
+        - ELASTIC_PASSWORD=--i1o-tRLIVf0-KqtFW-      # Set the password
+      deploy:
+        resources:
+          limits:
+            memory: 8g                     # Allocate 8 GB memory
+            cpus: '2.0'                    # Allocate 2 CPUs
+          reservations:
+            memory: 6g                     # Reserve 6 GB memory
+            cpus: '1.5'  
+      ulimits:
+        memlock:
+          soft: -1
+          hard: -1
+      volumes:
+        - es_data:/usr/share/elasticsearch/data
+      ports:
+        - "9200:9200"
+        - "9300:9300"
+      networks:
+        - es_network
+      healthcheck:
+        test: curl -s http://elasticsearch:9200/_cluster/health | grep -E '"status":"(yellow|green)"'
+        interval: 30s
+        timeout: 10s
+        retries: 5
+      stdin_open: true
+      tty: true
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.es.rule=PathPrefix(`/elasticsearch`)
+        - traefik.http.routers.es.entrypoints=web
+        - traefik.http.services.es.loadbalancer.server.port=9200
 
-  prometheus:
-    container_name: Prometheus
-    restart: always
-    image: prom/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-    depends_on:
-      - api
-    env_file: .env
-    networks:
-      - database
-      - es_network
-    ports:
-      - '9090:9090'
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.prometheus.rule=PathPrefix(`/metrics`)
-      - traefik.http.routers.prometheus.entrypoints=web
-      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+    prometheus:
+      container_name: Prometheus
+      restart: always
+      image: prom/prometheus
+      command:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+        - '--storage.tsdb.path=/prometheus'
+        - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+        - '--web.console.templates=/usr/share/prometheus/consoles'
+      depends_on:
+        - api
+      env_file: .env
+      networks:
+        - database
+        - es_network
+      ports:
+        - '9090:9090'
+      stdin_open: true
+      tty: true
+      volumes:
+        - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        - prometheus_data:/prometheus
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.prometheus.rule=PathPrefix(`/metrics`)
+        - traefik.http.routers.prometheus.entrypoints=web
+        - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
-  grafana:
-    # Change latest with your target version, if needed
-    image: grafana/grafana-enterprise
-    container_name: Grafana
-    restart: unless-stopped
-    ports:
-      - 3000:3000/tcp
-    volumes:
-      # Use your plugin folder (for example, redshift-datasource)
-      - ./grafana.ini:/etc/grafana/custom.ini
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_PATHS_CONFIG=/etc/grafana/custom.ini
-      - GF_RENDERING_SERVER_URL=http://renderer:8081/render
-      - GF_LOG_LEVEL=debug
-      - GF_RENDERING_CALLBACK_URL=http://grafana:3000/
-      - GF_LOG_FILTERS=rendering:debug
-      - GF_USERS_DEFAULT_THEME=dark
-      ## Enable Anonymous Authentication
-      - GF_SECURITY_ADMIN_USER=admin  # Admin username
-      - GF_SECURITY_ADMIN_PASSWORD=admin  # Admin password
-      - GF_SECURITY_DISABLE_GRAVATAR=true
-    networks:
-      - database
-      - es_network
-    stdin_open: true
-    tty: true
-    depends_on:
-      - prometheus
-    command: 
-      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|AppTitle="Grafana"|AppTitle="API2 Analytics"|g' {} \;
-      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana|API2 Analytics|g' {} \;
-      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana Enterprise Edition|API2 Analytics|g' {} \;
-      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana Enterprise|API2 Analytics|g' {} \;
-      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana Cloud|API2 Analytics|g' {} \;
-      - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Welcome to Grafana|Welcome to API2 Analytics|g' {} \;
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://grafana:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    labels:
-      - traefik.enable=true
-      # plain /grafana/* traffic: nginx stripped the prefix, so we do too
-      - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
-      - traefik.http.routers.grafana.entrypoints=web
-      - traefik.http.routers.grafana.middlewares=grafana-strip
-      - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
-      - traefik.http.services.grafana.loadbalancer.server.port=3000
-      # websocket path was NOT stripped in nginx, so give it its own higher-priority router
-      - traefik.http.routers.grafana-ws.rule=PathPrefix(`/grafana/api/live/ws`)
-      - traefik.http.routers.grafana-ws.entrypoints=web
-      - traefik.http.routers.grafana-ws.priority=10
-      - traefik.http.routers.grafana-ws.service=grafana
-      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    grafana:
+      # Change latest with your target version, if needed
+      image: grafana/grafana-enterprise
+      container_name: Grafana
+      restart: unless-stopped
+      ports:
+        - 3000:3000/tcp
+      volumes:
+        # Use your plugin folder (for example, redshift-datasource)
+        - ./grafana.ini:/etc/grafana/custom.ini
+        - grafana_data:/var/lib/grafana
+      environment:
+        - GF_PATHS_CONFIG=/etc/grafana/custom.ini
+        - GF_RENDERING_SERVER_URL=http://renderer:8081/render
+        - GF_LOG_LEVEL=debug
+        - GF_RENDERING_CALLBACK_URL=http://grafana:3000/
+        - GF_LOG_FILTERS=rendering:debug
+        - GF_USERS_DEFAULT_THEME=dark
+        ## Enable Anonymous Authentication
+        - GF_SECURITY_ADMIN_USER=admin  # Admin username
+        - GF_SECURITY_ADMIN_PASSWORD=admin  # Admin password
+        - GF_SECURITY_DISABLE_GRAVATAR=true
+      networks:
+        - database
+        - es_network
+      stdin_open: true
+      tty: true
+      depends_on:
+        - prometheus
+      command: 
+        - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|AppTitle="Grafana"|AppTitle="API2 Analytics"|g' {} \;
+        - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana|API2 Analytics|g' {} \;
+        - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana Enterprise Edition|API2 Analytics|g' {} \;
+        - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana Enterprise|API2 Analytics|g' {} \;
+        - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Grafana Cloud|API2 Analytics|g' {} \;
+        - find /usr/share/grafana/public/build/ -name *.js -exec sed -i 's|Welcome to Grafana|Welcome to API2 Analytics|g' {} \;
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://grafana:3000"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+      labels:
+        - traefik.enable=true
+        # plain /grafana/* traffic: nginx stripped the prefix, so we do too
+        - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
+        - traefik.http.routers.grafana.entrypoints=web
+        - traefik.http.routers.grafana.middlewares=grafana-strip
+        - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
+        - traefik.http.services.grafana.loadbalancer.server.port=3000
+        # websocket path was NOT stripped in nginx, so give it its own higher-priority router
+        - traefik.http.routers.grafana-ws.rule=PathPrefix(`/grafana/api/live/ws`)
+        - traefik.http.routers.grafana-ws.entrypoints=web
+        - traefik.http.routers.grafana-ws.priority=10
+        - traefik.http.routers.grafana-ws.service=grafana
+        - traefik.http.services.grafana.loadbalancer.server.port=3000
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    container_name: Zookeeper
-    ports:
-      - "127.0.0.1:2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-      KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=ruok"
-    networks:
-      - database
-    healthcheck:
-      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - ./zookeeper_data:/var/lib/zookeeper/data
-      - ./zookeeper_logs:/var/lib/zookeeper/logs
+    zookeeper:
+      image: confluentinc/cp-zookeeper:7.4.0
+      container_name: Zookeeper
+      ports:
+        - "127.0.0.1:2181:2181"
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+        KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=ruok"
+      networks:
+        - database
+      healthcheck:
+        test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      volumes:
+        - ./zookeeper_data:/var/lib/zookeeper/data
+        - ./zookeeper_logs:/var/lib/zookeeper/logs
 
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: Kafka
-    depends_on:
-      zookeeper:
-        condition: service_healthy
-    restart: always
-    ports:
-      - "127.0.0.1:9092:9092"
-      - "127.0.0.1:29092:29092"  # Internal access for containers
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    networks:
-      - database
-    healthcheck:
-      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:9092", "--describe"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./kafka_data:/var/lib/kafka/data
+    kafka:
+      image: confluentinc/cp-kafka:7.4.0
+      container_name: Kafka
+      depends_on:
+        zookeeper:
+          condition: service_healthy
+      restart: always
+      ports:
+        - "127.0.0.1:9092:9092"
+        - "127.0.0.1:29092:29092"  # Internal access for containers
+      environment:
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      networks:
+        - database
+      healthcheck:
+        test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:9092", "--describe"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+      stdin_open: true
+      tty: true
+      volumes:
+        - ./kafka_data:/var/lib/kafka/data
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: Kafka-ui
-    ports:
-      - "8090:8080"
-    depends_on:
-      kafka:
-        condition: service_healthy
-      zookeeper:
-        condition: service_healthy
-    restart: always
-    env_file: .env
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-      SERVER_SERVLET_CONTEXT_PATH: /kafka-ui
-      KAFKA_UI_CONFIG_BASE_PATH: /kafka-ui
-    networks:
-      - database
-    stdin_open: true
-    tty: true
-    volumes:
-      - kafka_ui_data:/var/lib/kafka-ui/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
-      - traefik.http.routers.kafka-ui.entrypoints=web
-      - traefik.http.services.kafka-ui.loadbalancer.server.port=8090
+    kafka-ui:
+      image: provectuslabs/kafka-ui:latest
+      container_name: Kafka-UI
+      ports:
+        - "8090:8080"
+      depends_on:
+        kafka:
+          condition: service_healthy
+        zookeeper:
+          condition: service_healthy
+      restart: always
+      env_file: .env
+      environment:
+        KAFKA_CLUSTERS_0_NAME: local
+        KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+        KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+        SERVER_SERVLET_CONTEXT_PATH: /kafka
+        KAFKA_UI_CONFIG_BASE_PATH: /kafka
+      networks:
+        - database
+      stdin_open: true
+      tty: true
+      volumes:
+        - kafka_ui_data:/var/lib/kafka-ui/data
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8090"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka`)
+        - traefik.http.routers.kafka-ui.entrypoints=web
+        - traefik.http.services.kafka-ui.loadbalancer.server.port=8080
+        - traefik.docker.network=database
+
+      
+    loki:
+      image: grafana/loki:3.0.0
+      container_name: Loki
+      ports:
+        - "3100:3100"
+      volumes:
+        - loki_data:/loki
+        - ./loki-config.yaml:/etc/loki/local-config.yaml
+        - ./loki/chunks:/loki/chunks
+        - ./loki/index:/loki/index
+        - ./loki/cache:/loki/cache
+        - ./loki/rules:/loki/rules
+        - ./loki/compactor:/loki/compactor
+        - ./loki/wal:/loki/wal
+        - ./loki/alertmanager:/loki/alertmanager
+      environment:
+        - LOKI_PORT=3100
+        - LOKI_CONFIG_FILE=/etc/loki/local-config.yaml
+        - LOKI_STORAGE_TYPE=filesystem
+        - LOKI_STORAGE_FILESYSTEM_DIRECTORY=/loki/chunks
+        - LOKI_STORAGE_BOLTDB_SHIPPER_ACTIVE_INDEX_DIRECTORY=/loki/index
+        - LOKI_STORAGE_BOLTDB_SHIPPER_CACHE_LOCATION=/loki/cache
+        - LOKI_STORAGE_BOLTDB_SHIPPER_SHARED_STORE=filesystem
+        - LOKI_SCHEMA_CONFIG_CONFIGS_0_FROM=2020-10-24
+        - LOKI_SCHEMA_CONFIG_CONFIGS_0_STORE=boltdb-shipper
+        - LOKI_SCHEMA_CONFIG_CONFIGS_0_OBJECT_STORE=filesystem
+        - LOKI_SCHEMA_CONFIG_CONFIGS_0_SCHEMA=v11
+        - LOKI_SCHEMA_CONFIG_CONFIGS_0_INDEX_PREFIX=index_
+        - LOKI_SCHEMA_CONFIG_CONFIGS_0_INDEX_PERIOD=24h
+        - LOKI_LIMITS_CONFIG_ENFORCE_METRIC_NAME=false
+        - LOKI_LIMITS_CONFIG_REJECT_OLD_SAMPLES=true
+        - LOKI_LIMITS_CONFIG_REJECT_OLD_SAMPLES_MAX_AGE=168h
+        - LOKI_CHUNK_STORE_CONFIG_MAX_LOOK_BACK_PERIOD=0s
+        - LOKI_TABLE_MANAGER_RETENTION_DELETES_ENABLED=false
+        - LOKI_TABLE_MANAGER_RETENTION_PERIOD=0s
+        - LOKI_RULES_ENABLE_ALERTMANAGER_V2=true
+        - LOKI_RULES_ALERTMANAGER_URL=http://alertmanager:9093
+        - LOKI_RULES_STORAGE_TYPE=local
+        - LOKI_RULES_LOCAL_DIRECTORY=/loki/rules
+        - LOKI_RULES_RING_KVSTORE_STORE=inmemory
+        - LOKI_RULES_RING_REPLICATION_FACTOR=1
+      command: -config.file=/etc/loki/local-config.yaml
+      restart: unless-stopped
+      networks:
+        - database
+        - es_network
+      stdin_open: true
+      tty: true
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.loki.rule=PathPrefix(`/loki`)
+        - traefik.http.routers.loki.entrypoints=web
+        - traefik.http.routers.loki.middlewares=loki-strip
+        - traefik.http.middlewares.loki-strip.stripprefix.prefixes=/loki
+        - traefik.http.services.loki.loadbalancer.server.port=3100
+
+
+    promtail: 
+      container_name: Promtail
+      image: grafana/promtail:3.0.0
+      volumes:
+        - /var/lib/docker/containers:/var/lib/docker/containers:ro
+        - /var/run/docker.sock:/var/run/docker.sock # Docker socket for container discovery 
+        - /var/log:/var/log                # Host logs
+        - ./promtail-config.yaml:/etc/promtail/config.yml:ro
+        - /etc/machine-id:/etc/machine-id # For unique ID
+      command: -config.file=/etc/promtail/config.yml
+      depends_on:
+        - loki
+      networks:
+        - database
+        - es_network  
+      restart: unless-stopped
+      ports:
+        - "9080:9080"  # Promtail HTTP server port
+      stdin_open: true
+      tty: true
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.promtail.rule=PathPrefix(`/promtail`)
+        - traefik.http.routers.promtail.entrypoints=web
+        - traefik.http.services.promtail.loadbalancer.server.port=9080
     
-  loki:
-    image: grafana/loki:3.0.0
-    container_name: Loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - loki_data:/loki
-      - ./loki-config.yaml:/etc/loki/local-config.yaml
-      - ./loki/chunks:/loki/chunks
-      - ./loki/index:/loki/index
-      - ./loki/cache:/loki/cache
-      - ./loki/rules:/loki/rules
-      - ./loki/compactor:/loki/compactor
-      - ./loki/wal:/loki/wal
-      - ./loki/alertmanager:/loki/alertmanager
-    environment:
-      - LOKI_PORT=3100
-      - LOKI_CONFIG_FILE=/etc/loki/local-config.yaml
-      - LOKI_STORAGE_TYPE=filesystem
-      - LOKI_STORAGE_FILESYSTEM_DIRECTORY=/loki/chunks
-      - LOKI_STORAGE_BOLTDB_SHIPPER_ACTIVE_INDEX_DIRECTORY=/loki/index
-      - LOKI_STORAGE_BOLTDB_SHIPPER_CACHE_LOCATION=/loki/cache
-      - LOKI_STORAGE_BOLTDB_SHIPPER_SHARED_STORE=filesystem
-      - LOKI_SCHEMA_CONFIG_CONFIGS_0_FROM=2020-10-24
-      - LOKI_SCHEMA_CONFIG_CONFIGS_0_STORE=boltdb-shipper
-      - LOKI_SCHEMA_CONFIG_CONFIGS_0_OBJECT_STORE=filesystem
-      - LOKI_SCHEMA_CONFIG_CONFIGS_0_SCHEMA=v11
-      - LOKI_SCHEMA_CONFIG_CONFIGS_0_INDEX_PREFIX=index_
-      - LOKI_SCHEMA_CONFIG_CONFIGS_0_INDEX_PERIOD=24h
-      - LOKI_LIMITS_CONFIG_ENFORCE_METRIC_NAME=false
-      - LOKI_LIMITS_CONFIG_REJECT_OLD_SAMPLES=true
-      - LOKI_LIMITS_CONFIG_REJECT_OLD_SAMPLES_MAX_AGE=168h
-      - LOKI_CHUNK_STORE_CONFIG_MAX_LOOK_BACK_PERIOD=0s
-      - LOKI_TABLE_MANAGER_RETENTION_DELETES_ENABLED=false
-      - LOKI_TABLE_MANAGER_RETENTION_PERIOD=0s
-      - LOKI_RULES_ENABLE_ALERTMANAGER_V2=true
-      - LOKI_RULES_ALERTMANAGER_URL=http://alertmanager:9093
-      - LOKI_RULES_STORAGE_TYPE=local
-      - LOKI_RULES_LOCAL_DIRECTORY=/loki/rules
-      - LOKI_RULES_RING_KVSTORE_STORE=inmemory
-      - LOKI_RULES_RING_REPLICATION_FACTOR=1
-    command: -config.file=/etc/loki/local-config.yaml
-    restart: unless-stopped
-    networks:
-      - database
-      - es_network
-    stdin_open: true
-    tty: true
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.loki.rule=PathPrefix(`/loki`)
-      - traefik.http.routers.loki.entrypoints=web
-      - traefik.http.routers.loki.middlewares=loki-strip
-      - traefik.http.middlewares.loki-strip.stripprefix.prefixes=/loki
-      - traefik.http.services.loki.loadbalancer.server.port=3100
+    renderer:
+      container_name: Renderer
+      image: grafana/grafana-image-renderer:latest
+      ports:
+        - "127.0.0.1:8081:8081"
+      networks:
+        - database
+      stdin_open: true
+      tty: true
+      depends_on:
+        - grafana
+      environment:
+        - GF_RENDERING_SERVER_URL=http://renderer:8081/render
+        - GF_RENDERING_CALLBACK_URL=http://grafana:3000/
+        - GF_RENDERING_CHROME_PATH=/usr/bin/chromium-browser
+        - GF_RENDERING_CHROME_DISABLE_GPU=true
+        - GF_RENDERING_CHROME_NO_SANDBOX=true
+        - GF_RENDERING_CHROME_ENABLE_PRINT_BACKGROUND=true
+        - GF_RENDERING_CHROME_HEADLESS=true
+      volumes:
+        - renderer_data:/tmp/render
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.renderer.rule=PathPrefix(`/render`)
+        - traefik.http.routers.renderer.entrypoints=web
+        - traefik.http.services.renderer.loadbalancer.server.port=8081
 
+    traefik:
+      image: traefik:v3.7.7          # was traefik:3.0 — many minors/patches behind
+      container_name: Traefik
+      restart: always
+      command:
+        - --api.dashboard=true
+        - --api.insecure=true          # dev-only; use an auth-protected dashboard router in prod
+        - --providers.docker=true
+        - --providers.docker.endpoint=unix:///var/run/docker.sock
+        - --providers.docker.exposedbydefault=false
+        - --entrypoints.web.address=:80
+        - --entrypoints.traefik.address=:8060
+      ports:
+        - "80:80"
+        - "8060:8060"
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+      networks:
+        - database
+        - es_network
+      tty: true
+      stdin_open: true
 
-  promtail: 
-    container_name: Promtail
-    image: grafana/promtail:3.0.0
-    volumes:
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock # Docker socket for container discovery 
-      - /var/log:/var/log                # Host logs
-      - ./promtail-config.yaml:/etc/promtail/config.yml:ro
-      - /etc/machine-id:/etc/machine-id # For unique ID
-    command: -config.file=/etc/promtail/config.yml
-    depends_on:
-      - loki
-    networks:
-      - database
-      - es_network  
-    restart: unless-stopped
-    ports:
-      - "9080:9080"  # Promtail HTTP server port
-    stdin_open: true
-    tty: true
-  
-  renderer:
-    container_name: Renderer
-    image: grafana/grafana-image-renderer:latest
-    ports:
-      - "127.0.0.1:8081:8081"
-    networks:
-      - database
-    stdin_open: true
-    tty: true
-    depends_on:
-      - grafana
-    environment:
-      - GF_RENDERING_SERVER_URL=http://renderer:8081/render
-      - GF_RENDERING_CALLBACK_URL=http://grafana:3000/
-      - GF_RENDERING_CHROME_PATH=/usr/bin/chromium-browser
-      - GF_RENDERING_CHROME_DISABLE_GPU=true
-      - GF_RENDERING_CHROME_NO_SANDBOX=true
-      - GF_RENDERING_CHROME_ENABLE_PRINT_BACKGROUND=true
-      - GF_RENDERING_CHROME_HEADLESS=true
-    volumes:
-      - renderer_data:/tmp/render
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.renderer.rule=PathPrefix(`/render`)
-      - traefik.http.routers.renderer.entrypoints=web
-      - traefik.http.services.renderer.loadbalancer.server.port=8081
+  volumes:
+    database_data: {}
+    es_data:
+      driver: local
+    prometheus_data: {}
+    grafana_data: {}
+    secrets: {}
+    kafka_data: {}
+    kafka_ui_data: {}
+    renderer_data: {}
+    zookeeper_data: {}
+    zookeeper_logs: {}
+    loki_data: {}
 
-  traefik:
-    image: traefik:v3.7.7          # was traefik:3.0 — many minors/patches behind
-    container_name: traefik
-    restart: always
-    command:
-      - --api.dashboard=true
-      - --api.insecure=true          # dev-only; use an auth-protected dashboard router in prod
-      - --providers.docker=true
-      - --providers.docker.endpoint=unix:///var/run/docker.sock
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
-      - --entrypoints.traefik.address=:8080
-    ports:
-      - "80:80"
-      - "8080:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - database
-      - es_network
-
-volumes:
-  database_data: {}
-  es_data:
-    driver: local
-  prometheus_data: {}
-  grafana_data: {}
-  secrets: {}
-  kafka_data: {}
-  kafka_ui_data: {}
-  renderer_data: {}
-  zookeeper_data: {}
-  zookeeper_logs: {}
-  loki_data: {}
-
-networks:
-  database:
-  es_network:
+  networks:
+    database:
+    es_network:
