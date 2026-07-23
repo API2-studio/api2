@@ -53,6 +53,39 @@ Tasks form a linked graph of steps — each task points to what runs next, with 
 | `on_true_id` / `on_false_id` | Branch targets when `condition` is used (conditional flow) |
 | `previous_task_id` | The preceding task in the graph |
 
+### **`js_script` action**
+
+`js_script` runs an asynchronous JavaScript snippet in the isolated `workflow-js` service. Put the source in `action_data.script`; scripts receive a read-only `context` and the `actions` API. Calls must be awaited and each action receives an object of context fields to add for that call.
+
+```json
+{
+  "name": "Create then log",
+  "action": "js_script",
+  "action_data": {
+    "script": "await actions.createRecord({ payload: context.payload });\nawait actions.logInfo({ info: { message: 'Record created' } });\nreturn { created: true };"
+  }
+}
+```
+
+The API exposes: `sendEmail`, `generateReport`, `logError`, `logInfo`, record and structure CRUD actions, `createJob`, `createIndex`, `loadDataToVariable`, `request`, `checkPermissions`, `externalApiCall`, `conditionOnly`, `noAction`, and `webhookEvent`. It deliberately does not expose `js_script`, `runWorkflow`, `resetWorkflow`, or `kafkaMessage`.
+
+The script's return value is saved in workflow context as `script_result`. Scripts cannot replace `user_id` or `workflow_id`; each action runs in Elixir using the original, server-held workflow context.
+
+#### Deployment configuration
+
+The API needs `WORKFLOW_JS_RUNNER_URL` (normally `http://workflow-js:3000/execute`), `WORKFLOW_JS_RUNNER_TIMEOUT_MS` (normally `10000`), and `WORKFLOW_JS_RUNNER_SECRET`. The runner needs the same secret, `WORKFLOW_JS_CALLBACK_URL` (normally `http://api:4000/internal/workflow-js/action`), `WORKFLOW_JS_TIMEOUT_MS`, and `PORT`.
+
+The Helm runner is disabled by default. Enable it with a Secret that contains `WORKFLOW_JS_RUNNER_SECRET`:
+
+```yaml
+workflowJs:
+  enabled: true
+  secret:
+    existingSecret: workflow-js-production-secret
+```
+
+The chart deploys the runner with a read-only filesystem, non-root user, dropped capabilities, runtime-default seccomp, no service-account token, resource limits, and a NetworkPolicy allowing only API traffic plus cluster DNS. The cluster CNI must enforce `NetworkPolicy` for the latter control to be effective.
+
 ### **Create a Workflow — `POST /api/v1/workflows`**
 
 ```json
@@ -63,30 +96,94 @@ Tasks form a linked graph of steps — each task points to what runs next, with 
   "acl": { "roles": ["hr_admin"] },
   "triggers": [
     {
-      "event_source": "data",
-      "event_type": "created",
-      "table_name": "employees"
+      "event_source": "db",
+      "event_type": "insert",
+      "table_name": "users"
     }
   ],
   "tasks": [
     {
       "name": "Create accounts",
-      "action": "create_user_accounts",
-      "action_data": { "systems": ["email", "slack"] },
+      "action": "createRecord",
+      "action_data": { 
+          "name": "{{context.trigger_response.name}}",
+          "email": "{{context.trigger_response.email}}",
+       },
       "initial": true,
-      "next_task_id": "send_welcome_email"
-    },
-    {
-      "name": "Send welcome email",
-      "action": "send_email",
-      "action_data": { "template": "welcome" },
-      "previous_task_id": "create_accounts"
+      "next_task": {
+        "name": "Send welcome email",
+        "action": "send_email",
+        "action_data": { "template": "welcome", "to": "{{context.trigger_response.email}}" },
+      }
     }
   ]
 }
 ```
 
-> The exact mechanism for linking `next_task_id`/`on_true_id`/`on_false_id`/`previous_task_id` between tasks in the same create request (temporary reference vs. real id) isn't documented in the OpenAPI spec — confirm the expected linking format against a real create call/response before relying on it in production.
+### **Create a Workflow (Conditions) — `POST /api/v1/workflows`**
+
+```json
+{
+  "name": "New Employee Onboarding",
+  "description": "Provision accounts and send welcome docs for a new hire",
+  "repeatable": true,
+  "triggers": [
+    {
+      "event_source": "db",
+      "event_type": "insert",
+      "table_name": "users"
+    }
+  ],
+  "tasks": [
+    {
+      "name": "Create accounts",
+      "action": "createRecord",
+      "action_data": {
+        "action": "create",
+        "type": "data",
+        "body": {
+          "id":"<uuid for table>",
+          "schema": [
+            {
+              "field": "name",
+              "value": "{{context.trigger_response.name}}",
+            },
+            {
+              "field": "email",
+              "value": "{{context.trigger_response.email}}"
+            }
+          ]
+        },
+      },
+      "initial": true,
+      "next_task": {
+        "name": "Send welcome email",
+        "action": "sendEmail",
+        "action_data": { "template": "welcome", "to": "{{context.trigger_response.email}}" },
+        "condition": "context.trigger_response.name != admin",
+        "on_true": {
+          "name": "log info",
+          "action": "logInfo",
+          "action_data": {
+            "info": {
+              "message": "Onboarding Success!"
+            }
+          }
+        },
+        "on_false" {
+          "name": "log error",
+          "action": "LogError",
+          "action_data": {
+            "error": {
+              "message": "Admin is already onboarded!"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+```
 
 ### **Get / Update / Delete a Workflow**
 
