@@ -1,0 +1,6 @@
+{
+  "name": "canopus-workflow-js-runner",
+  "private": true,
+  "version": "1.0.0",
+  "engines": { "node": ">=22.13.0" }
+}

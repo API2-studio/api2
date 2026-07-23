@@ -10,13 +10,17 @@
           condition: service_healthy
         elasticsearch:
           condition: service_healthy
+        workflow-js:
+          condition: service_healthy
       env_file: .env
       environment:
         - GCP_CREDENTIALS=/app/secrets/application_default_credentials.json
         - CLOAK_KEY=/app/secrets/cloak_key
+        - WORKFLOW_JS_RUNNER_TIMEOUT_MS=${WORKFLOW_JS_RUNNER_TIMEOUT_MS:-10000}
       networks:
         - database
         - es_network
+        - workflow_js
       ports:
         - '4000:4000'
       stdin_open: true
@@ -29,6 +33,35 @@
         - "traefik.http.routers.api.rule=Host(`localhost`)"
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.services.api.loadbalancer.server.port=4000"
+
+    workflow-js:
+      build:
+        context: ./workflow-js
+        dockerfile: Dockerfile
+      restart: always
+      environment:
+        PORT: "3000"
+        WORKFLOW_JS_TIMEOUT_MS: "3000"
+        WORKFLOW_JS_RUNNER_SECRET: ${WORKFLOW_JS_RUNNER_SECRET:?set WORKFLOW_JS_RUNNER_SECRET}
+        WORKFLOW_JS_CALLBACK_URL: http://api:4000/internal/workflow-js/action
+      networks:
+        - workflow_js
+      read_only: true
+      tmpfs:
+        - /tmp:rw,noexec,nosuid,size=16m
+      user: "node"
+      cap_drop:
+        - ALL
+      security_opt:
+        - no-new-privileges:true
+      pids_limit: 64
+      mem_limit: 128m
+      cpus: "0.50"
+      healthcheck:
+        test: ["CMD", "node", "-e", "process.exit(0)"]
+        interval: 30s
+        timeout: 3s
+        retries: 3
 
     database:
       container_name: Database
@@ -413,3 +446,4 @@
   networks:
     database:
     es_network:
+    workflow_js:
