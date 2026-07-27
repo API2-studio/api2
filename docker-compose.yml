@@ -413,6 +413,12 @@
       command:
         - --api.dashboard=true
         - --api.insecure=true          # dev-only; use an auth-protected dashboard router in prod
+        # Keep both Traefik's own logs and one line per HTTP request on stdout so
+        # they are visible in the foreground with `docker compose up`.
+        - --log.level=INFO
+        - --log.format=common
+        - --accesslog=true
+        - --accesslog.format=common
         - --providers.docker=true
         - --providers.docker.endpoint=unix:///var/run/docker.sock
         - --providers.docker.exposedbydefault=false
