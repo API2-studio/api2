@@ -30,6 +30,9 @@
         - ./secrets:/secrets:ro
       labels:
         - "traefik.enable=true"
+        # The API also joins workflow_js, which Traefik cannot reach. Pin the
+        # Docker provider to a network shared by both containers.
+        - "traefik.docker.network=${COMPOSE_PROJECT_NAME:-dynamic}_database"
         - "traefik.http.routers.api.rule=Host(`localhost`)"
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.services.api.loadbalancer.server.port=4000"
