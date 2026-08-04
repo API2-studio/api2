@@ -72,6 +72,30 @@ password: admin123456
 ### **Notes**
 
 - Authentication uses a JWT-based bearer scheme (`type: http`, `scheme: bearer`).
+
+## Optional OAuth login providers
+
+Password login remains enabled at `POST /api/v1/authentication/identity/callback` and
+continues to return the application's Guardian JWT. Google, Microsoft, and Apple login
+are opt-in: a provider is registered only when both of its client environment variables
+are non-empty.
+
+| Provider | Environment variables | Start URL | Callback URL |
+| --- | --- | --- | --- |
+| Google | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` | `/api/v1/authentication/google` | `/api/v1/authentication/google/callback` |
+| Microsoft | `MICROSOFT_OAUTH_CLIENT_ID`, `MICROSOFT_OAUTH_CLIENT_SECRET`, optional `MICROSOFT_OAUTH_TENANT_ID` (defaults to `common`) | `/api/v1/authentication/microsoft` | `/api/v1/authentication/microsoft/callback` |
+| Apple | `APPLE_OAUTH_CLIENT_ID`, `APPLE_OAUTH_CLIENT_SECRET` | `/api/v1/authentication/apple` | `/api/v1/authentication/apple/callback` |
+
+Register the exact callback URL with each provider. Apple uses a `POST` callback and
+requests the `name email` scopes. Its client secret expires, so deployments must rotate
+`APPLE_OAUTH_CLIENT_SECRET` before its configured expiry.
+
+When a provider returns a valid email address that does not match a local user, OAuth
+login creates that user and assigns the system-managed `basic` role. Permission sync
+creates or updates this non-registerable role with only `auth` read, update, and delete
+permissions. Existing users retain their current roles. On success, the response has the
+same Guardian JWT, user, and permissions shape as password login, so API bearer-token
+authentication is unchanged.
 - The MCP server's `api2_request` tool handles attaching the token for you — you don't need to call this endpoint manually when working through the MCP (see [[mcp]]).
 
 ---
