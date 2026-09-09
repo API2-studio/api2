@@ -8,4 +8,9 @@
 /zookeeper-data
 /zookeeper_data
 /loki
+/crm-admin-client
+/linkedin_article_api2.md
+/.pnpm-store/*
+
+
 .DS_Store
