@@ -56,7 +56,7 @@ A shell export overrides the value in `.env`. Use an API release that includes `
 
 ### 3. Create the environment file
 
-`.env` is supplied as an example. With example values. Update it in the repository root, or update your existing file without discarding deployment-specific values. The following is a starting configuration for the Compose service names. Replace every `replace-*` value before starting. Most of the ENV values specified in the example are required for the API to start successfully. The workflow runner requires `WORKFLOW_JS_RUNNER_SECRET` to match the API's SECRET_KEY_BASE value. If it is empty, or configured with a different value, the runner will fail to connect to the API and JS tasks will not execute in workflows.
+`.env` is supplied as an example. With example values. Update it in the repository root, or update your existing file without discarding deployment-specific values. The following is a starting configuration for the Compose service names. Replace every `replace-*` value before starting. Most of the ENV values specified in the example are required for the API to start successfully. The workflow runner requires the same `WORKFLOW_JS_RUNNER_SECRET` value in the API and runner containers, with at least 32 characters. Compose supplies that shared value from `.env`; it does not need to equal `SECRET_KEY_BASE`.
 
 ```dotenv
 COMPOSE_PROJECT_NAME=dynamic
@@ -439,6 +439,7 @@ Helm rollback also does not undo database changes. Review persistent-volume rete
 
 ## Documentation
 
+- [Getting Started](documentation/getting_started.md)
 - [API conventions and overview](documentation/general.md)
 - [Authentication](documentation/auth.md)
 - [Users](documentation/users.md), [roles](documentation/roles.md), and [groups](documentation/groups.md)
