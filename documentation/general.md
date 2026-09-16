@@ -1,153 +1,126 @@
-## **API2 — General Overview**
+# API2 General Overview
 
-**API2** is a headless API builder that lets you create, manage, and deploy REST endpoints without writing code. It ships as a single binary executable with an admin interface, turning schema designs into production-ready APIs.
+API2 provides management APIs and configurable data endpoints for building applications around database structures, records, workflows, and access controls. Its frontend provides a visual interface for managing the deployment, and its bundled MCP server exposes tools for working with the API from assistants.
 
-### **What is API2?**
+Deploy API2 using the published [Docker Hub image](https://hub.docker.com/r/api2studio/canopus-api) and this repository's Docker Compose configuration or Helm chart. Start with [Getting Started](getting_started.md) for the installation sequence and the [README](../README.md) for configuration details.
 
-A monolithic application (built on Elixir/Phoenix) that provides:
+## Runtime components
 
-- **Dynamic REST endpoint creation** — GET, POST, PUT, PATCH, DELETE endpoints through the admin interface
-- **Visual database schema builder** — drag-and-drop data structure design
-- **Automatic API generation** — schemas become instant REST APIs
-- **Built-in authentication & authorization** — role-based access control out of the box
-- **Real-time API documentation** — auto-generated OpenAPI specs
-- **Zero deployment complexity** — single binary, just run and go
+The API runs in the `api` container. The Compose stack includes PostgreSQL, Elasticsearch, Kafka/ZooKeeper, a JavaScript workflow runner, Traefik, and monitoring/logging services. The workflow runner is built inside Docker from the supplied source; users do not need a local Node.js installation to run it.
 
-### **Core Features**
+The API container serves the frontend assets included in its image. Open the deployment root for the frontend rather than assuming a separate `/admin` route. A separately hosted frontend should point to the appropriate API deployment.
 
-- **Instant API Creation** — configure endpoints through the web interface, no coding required, full CRUD support for relational structures
-- **Visual Database Designer** — UML-like schema design, relationship support (one-to-many, many-to-many), built-in field types/validation, real-time migration
-- **Enterprise-Ready Security** — JWT-based authentication, granular role-based permissions, field-level access controls, API key management
-- **Advanced Query Capabilities** — complex JOIN operations, filtering/sorting/pagination, full-text search integration, custom query building
-- **Production Ready** — horizontal scaling, WebSocket support, comprehensive audit logging
+This is a configurable runtime stack. Review storage, secrets, networking, and resource requirements before deploying it outside a local development environment.
 
-### **How It Works**
+## Capabilities
 
-1. **Install** — download the single binary executable
-2. **Configure** — access the admin interface to set up your database
-3. **Design** — use the visual schema builder to create data structures
-4. **Deploy** — REST APIs are automatically generated and available
-5. **Integrate** — use the auto-generated documentation to integrate with your applications
+| Area | Purpose |
+| --- | --- |
+| Structures and data | Define tables and relationships, then read and modify records. |
+| Endpoints | Register routes with queries, response templates, and access settings. |
+| Identity and access | Manage users, roles, groups, and integration clients. |
+| Workflows | Configure application workflows and JavaScript actions. |
+| Integration | Work with files, search, jobs, events, and webhooks. |
+| Discovery | Inspect OpenAPI documents and use MCP tools to explore available routes. |
 
-### **Use Cases**
+Availability and behavior depend on the API image, configured services, and permissions. The example deployment does not establish production availability or scaling guarantees.
 
-- Rapid prototyping — working APIs in minutes
-- Backend-as-a-Service for mobile/web applications
-- Exposing legacy databases as modern REST APIs
-- Lightweight microservices
-- Internal tools and admin dashboards
+## API organization
 
-### **API Structure**
+### Management routes
 
-Dynamically created table endpoints follow RESTful conventions:
+Management APIs use the `/api/v1` prefix. Common route families include:
 
-```
-GET    /api/v1/dynamic/{table_name}       # List all records
-GET    /api/v1/dynamic/{table_name}/{id}  # Get specific record
-POST   /api/v1/dynamic/{table_name}       # Create new record
-PUT    /api/v1/dynamic/{table_name}/{id}  # Update entire record
-PATCH  /api/v1/dynamic/{table_name}/{id}  # Partial update
-DELETE /api/v1/dynamic/{table_name}/{id}  # Delete record
-```
+| Route family | Purpose |
+| --- | --- |
+| `/api/v1/structure` | Inspect and manage table structures. |
+| `/api/v1/data` | Perform data operations using API2's request format. |
+| `/api/v1/endpoints` | Manage registered endpoints. |
+| `/api/v1/authentication` | User authentication. |
+| `/api/v1/users`, `/api/v1/roles`, `/api/v1/groups` | User and access management. |
+| `/api/v1/clients` | Manage integration clients. |
+| `/api/v1/workflows`, `/api/v1/jobs`, `/api/v1/webhooks` | Workflow and integration operations. |
+| `/api/v1/files`, `/api/v1/search`, `/api/v1/views` | Files, search, and views. |
+| `/api/v1/mcp` | HTTP MCP endpoint for assistant tools. |
 
-### **API Surface (as of current build)**
+A route family does not imply that every HTTP method is supported. Consult the deployed API schema for each operation's method, request body, and response.
 
-**Base API** — 19 management endpoints across: `audit`, `authentication` (identity callback), `data`, `endpoints`, `files`, `groups`, `indexes`, `roles`, `search`, `structure`, `users`, `view`.
+### Dynamic and custom endpoints
 
-**Dynamic API** — 130 endpoints across 26 tables, covering CRUD for: `workflow_states`, `events`, `event_definitions`, `job_schedules`, `group_roles`, `records`, `webhooks`, `user_groups`, `configs`, `documents`, `roles`, `views`, `email_templates`, `triggers`, `groups`, `endpoints`, `channels`, `tasks`, `files`, `tables`, `users`, `workflows`, `policies`, `request_logs`, `clients`, `user_roles`.
+Registered endpoints define the paths and methods exposed for data access. Discover them through the dynamic OpenAPI document, `list_dynamic_endpoints`, or the endpoint management API. Do not assume every table has all CRUD routes or that every URL follows `/api/v1/dynamic/{table}`.
 
-**Route groups:** data · structure · views · authentication · users · roles · indexes · docs · audit · jobs · dashboards · helpers · access_controls · import · logs · search · files · endpoints · workflows · events · webhooks · channels · ws · groups · clients · sdk · dynamic
+The deployment's endpoint and table counts change as structures and routes are added or removed. Use `describe_api2_surface` to inspect the current surface rather than relying on a fixed count in documentation.
 
-### **Management API**
+### Request schemas
 
-The core management endpoints let you configure your API structure programmatically.
+Structure creation and endpoint creation use different request formats:
 
-**Structure Management** — create and manage database schemas.
+- Structure operations use the structure request envelope, including `type`, `action`, and `body`. A bare object containing a table name and field list is not a complete structure request.
+- Custom endpoint definitions refer to the backing structure with `source_table_id`. Inspect the query and response-template schemas for your release before supplying their values.
+- Data requests have their own action and query conventions; see [data operations](data.md).
 
-<details>
-<summary>Create Table — Basic Example</summary>
+Use the frontend or inspect the live schemas before making changes. This guide intentionally leaves deployment-specific table definitions to those schemas instead of presenting unchecked creation payloads.
 
-```json
-{
-  "name": "products",
-  "parent": "base",
-  "schema": [
-    { "name": "name", "type": "varchar", "required": true },
-    { "name": "price", "type": "decimal", "required": true },
-    { "name": "description", "type": "text" }
-  ]
-}
-```
-</details>
+## Authentication
 
-<details>
-<summary>Create Table with Relations</summary>
+### API2 user sessions
 
-```json
-{
-  "name": "orders",
-  "parent": "base",
-  "schema": [
-    { "name": "total_amount", "type": "decimal", "required": true },
-    { "name": "customer_id", "type": "uuid", "foreign_key": true, "references_table": "customers", "references_column": "id" }
-  ],
-  "relations": [
-    { "relation_type": "belongs_to", "table": "customers", "foreign_key": "customer_id" }
-  ]
-}
-```
-</details>
+User login uses `POST /api/v1/authentication/identity/callback` with an email and password nested under `user`. The response includes a user bearer token for routes that support user authentication. See [authentication](auth.md) for the request and response shape.
 
-**Endpoint Management** — create custom endpoints with specific query logic and response formatting.
+User permissions still determine which operations are allowed. Signing in to the frontend does not automatically configure an external MCP client.
 
-<details>
-<summary>Custom GET Endpoint</summary>
+### MCP client keys
 
-```json
-{
-  "name": "Get Active Products",
-  "url": "/api/v1/products/active",
-  "method": "GET",
-  "source_table": "products",
-  "query": {
-    "where": { "active": true },
-    "order_by": "created_at desc"
-  },
-  "response_template": {
-    "fields": ["id", "name", "price", "created_at"]
-  }
-}
-```
-</details>
+To authorize an MCP integration:
 
-**User & Role Management** — configure authentication and authorization.
+1. Sign in to the API2 frontend and open `/clients`.
+2. Create an integration client with the required access.
+3. Generate its API key from the same page.
+4. Configure the assistant to send the key as `x-api-key: <generated-client-api-key>`.
 
-**File Management** — file uploads and attachments with automatic CDN integration.
+MCP uses the generated client key without a `Bearer` prefix. A client ID, user password, or assistant-provider credential is not a substitute. See [the README authentication walkthrough](../README.md#authenticate-with-api2) and its [Codex](../README.md#connect-codex) and [Claude Code](../README.md#connect-claude-code) sections.
 
-### **Authentication**
+## Discover the running API
 
-API2 uses bearer-token (JWT) authentication (`Authorization: Bearer <token>`). Obtain a token via the login endpoint:
+The following routes are present in the API router reviewed for this guide. Use your deployment's origin; the local Compose API is at `http://localhost:4000`.
 
-```
-POST /api/v1/authentication/identity/callback
+| Path | Purpose |
+| --- | --- |
+| `/` | Frontend entry point for images containing the UI assets. |
+| `/docs` | Management API documentation. |
+| `/swaggerui` | Swagger UI for the management specification. |
+| `/api/openapi` | Management OpenAPI JSON. |
+| `/dynamic_docs` | Dynamic API documentation. |
+| `/api/dynamic_openapi` | Dynamic OpenAPI JSON. |
+| `/health` | Basic HTTP liveness response. |
+| `/api/v1/mcp` | MCP JSON-RPC requests over HTTP POST. |
+
+Download the schemas from your running instance:
+
+```bash
+export API2_BASE_URL=http://localhost:4000
+curl --fail-with-body --silent --show-error "$API2_BASE_URL/api/openapi" | jq .
+curl --fail-with-body --silent --show-error "$API2_BASE_URL/api/dynamic_openapi" | jq .
 ```
 
-### **Getting Started**
+Check that the response is the expected JSON, not frontend HTML returned for an unrecognized path. A successful `/health` response confirms HTTP liveness, not database readiness or the health of every dependency.
 
-1. Download the API2 binary for your platform
-2. Run `./api2 start` to launch the server
-3. Visit `http://localhost:4000/admin` to access the management interface
-4. Create your first table schema
-5. Start making API calls to your new endpoints
+Through MCP, begin with `describe_api2_surface`, `get_openapi_spec`, or `list_dynamic_endpoints`. Use `api2_request` for management operations and `dynamic_request` for supported table operations. Authenticate with the generated client key first; see [the MCP initialization check](getting_started.md#7-create-a-client-for-mcp).
 
-### **Support & Documentation**
+## Suggested workflow
 
-- **Admin Interface** — complete visual management at `/`
-- **API Documentation** — auto-generated docs at `/docs`
-- **Health Check** — status monitoring at `/health`
-- **OpenAPI Spec** — machine-readable spec at `/api/openapi`
-- **Demo instance** — [api2.dev](http://api2.dev), docs at [api2.dev/docs](http://api2.dev/docs), Swagger UI at [api2.dev/swaggerui](http://api2.dev/swaggerui), live structure JSON at [api2.dev/structure](http://api2.dev/structure)
+1. Start and verify the Docker deployment using [Getting Started](getting_started.md).
+2. Sign in to the frontend and review the existing structures and access settings.
+3. Inspect the live schema for the operation you want to perform.
+4. Create or update a structure through the frontend or the documented management operation.
+5. Inspect its registered endpoints and verify the intended request with an authorized identity.
+6. If using an assistant, create an API2 client and configure its generated key before calling MCP tools.
 
----
+## Further documentation
 
-See also: [[Introduction]], [[API2 - Dynamic Data Queries]], [[Encoded queries explained]], and the `Functions/` folder for per-action (Create/Read/Update/Delete) documentation.
+- [Runtime setup and operations](../README.md)
+- [Authentication](auth.md), [users](users.md), [roles](roles.md), and [groups](groups.md)
+- [Data operations](data.md), [endpoints](endpoints.md), and [views](views.md)
+- [Workflows](workflows.md), [jobs](jobs.md), and [webhooks](webhooks.md)
+- [Files](files.md), [search](search.md), and [audit](audit.md)
+- [MCP tools](mcp.md)
