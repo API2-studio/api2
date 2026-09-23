@@ -2,7 +2,7 @@
 
 Run API2 with Docker Compose or Kubernetes, and connect AI assistants to its built-in Model Context Protocol (MCP) server. API2 exposes management and dynamic data APIs for working with structures, records, endpoints, workflows, and access controls.
 
-This repository contains deployment configuration and API documentation. The API runs from the published `api2studio/canopus-api` image; the JavaScript workflow runner is built from `workflow-js/`.
+This repository contains deployment configuration and API documentation. The API runs from the published `api2studio/canopus-api` image; the JavaScript workflow runner runs from the published `api2studio/workflow-sandbox` image.
 
 ## Contents
 
@@ -44,7 +44,7 @@ cd api2
 
 Run subsequent Compose commands from this directory.
 
-### 2. Select the API image
+### 2. Select the runtime images
 
 Set `API_IMAGE` in `.env` or export it in your shell. Choose a published tag from [Docker Hub](https://hub.docker.com/r/api2studio/canopus-api/tags) for reproducible deployments. If omitted, Compose uses `api2studio/canopus-api:latest`.
 
@@ -54,6 +54,8 @@ export API_IMAGE=api2studio/canopus-api:latest
 
 A shell export overrides the value in `.env`. Use an API release that includes `/api/v1/mcp`; older images may not provide the same MCP tools or authentication behavior.
 
+Set `WORKFLOW_JS_IMAGE` in `.env` or export it in your shell to select the workflow runner image. If omitted, Compose uses `api2studio/workflow-sandbox:latest`. The runner's shared secret is supplied at container startup through `WORKFLOW_JS_RUNNER_SECRET`.
+
 ### 3. Create the environment file
 
 `.env` is supplied as an example. With example values. Update it in the repository root, or update your existing file without discarding deployment-specific values. The following is a starting configuration for the Compose service names. Replace every `replace-*` value before starting. Most of the ENV values specified in the example are required for the API to start successfully. The workflow runner requires the same `WORKFLOW_JS_RUNNER_SECRET` value in the API and runner containers, with at least 32 characters. Compose supplies that shared value from `.env`; it does not need to equal `SECRET_KEY_BASE`.
@@ -61,6 +63,7 @@ A shell export overrides the value in `.env`. Use an API release that includes `
 ```dotenv
 COMPOSE_PROJECT_NAME=dynamic
 API_IMAGE=api2studio/canopus-api:latest
+WORKFLOW_JS_IMAGE=api2studio/workflow-sandbox:latest
 
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=replace-database-password
@@ -168,7 +171,6 @@ Compose mounts this directory read-only at `/app/secrets` and `/secrets`, and ov
 ```bash
 docker compose config --quiet
 docker compose pull
-docker compose build workflow-js
 docker compose up -d
 docker compose ps
 docker compose logs --tail=100 api
