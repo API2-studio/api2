@@ -38,9 +38,8 @@
         - "traefik.http.services.api.loadbalancer.server.port=4000"
 
     workflow-js:
-      build:
-        context: ./workflow-js
-        dockerfile: Dockerfile
+      container_name: Sandbox
+      image: ${WORKFLOW_JS_IMAGE:-api2studio/workflow-sandbox:latest}
       restart: always
       environment:
         PORT: "3000"
